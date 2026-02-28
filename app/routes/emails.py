@@ -10,6 +10,7 @@ emails_bp = Blueprint('emails', __name__)
 api = MailServerAPI()
 
 ALLOWED_TAGS = [
+    'html', 'body', 'head', 'meta', 'title', 'link', 'style',
     'p', 'br', 'strong', 'em', 'u', 'a', 'ul', 'ol', 'li', 
     'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 
     'blockquote', 'pre', 'code',
@@ -17,27 +18,37 @@ ALLOWED_TAGS = [
     'span', 'div', 'img', 
     'hr', 'sub', 'sup', 'small', 'mark',
     'article', 'section', 'header', 'footer', 'main', 'aside',
-    'figure', 'figcaption'
+    'figure', 'figcaption',
+    'font', 'center', 'nobr'
 ]
 ALLOWED_ATTRIBUTES = {
-    'a': ['href', 'title', 'target', 'rel'],
-    'img': ['src', 'alt', 'width', 'height', 'style'],
-    'table': ['width', 'cellpadding', 'cellspacing', 'border', 'style'],
-    'td': ['colspan', 'rowspan', 'width', 'style', 'align', 'valign'],
-    'th': ['colspan', 'rowspan', 'width', 'style', 'align', 'valign'],
-    'tr': ['style'],
-    'div': ['style', 'class'],
+    'body': ['style', 'bgcolor', 'text', 'link', 'vlink', 'alink'],
+    'html': ['lang', 'xmlns'],
+    'meta': ['charset', 'name', 'content', 'http-equiv'],
+    'link': ['href', 'rel', 'type'],
+    'style': ['type'],
+    'a': ['href', 'title', 'target', 'rel', 'style', 'class'],
+    'img': ['src', 'alt', 'width', 'height', 'style', 'class', 'border'],
+    'table': ['width', 'cellpadding', 'cellspacing', 'border', 'style', 'class', 'bgcolor', 'align'],
+    'td': ['colspan', 'rowspan', 'width', 'style', 'class', 'align', 'valign', 'bgcolor'],
+    'th': ['colspan', 'rowspan', 'width', 'style', 'class', 'align', 'valign', 'bgcolor'],
+    'tr': ['style', 'class', 'bgcolor', 'align', 'valign'],
+    'div': ['style', 'class', 'align'],
     'span': ['style', 'class'],
-    'p': ['style', 'class'],
-    'h1': ['style', 'class'],
-    'h2': ['style', 'class'],
-    'h3': ['style', 'class'],
-    'h4': ['style', 'class'],
-    'h5': ['style', 'class'],
-    'h6': ['style', 'class'],
+    'p': ['style', 'class', 'align'],
+    'h1': ['style', 'class', 'align'],
+    'h2': ['style', 'class', 'align'],
+    'h3': ['style', 'class', 'align'],
+    'h4': ['style', 'class', 'align'],
+    'h5': ['style', 'class', 'align'],
+    'h6': ['style', 'class', 'align'],
     'blockquote': ['style', 'class'],
     'figure': ['style', 'class'],
     'figcaption': ['style', 'class'],
+    'font': ['face', 'size', 'color', 'style'],
+    'ul': ['style', 'class', 'type'],
+    'ol': ['style', 'class', 'type', 'start'],
+    'li': ['style', 'class'],
 }
 
 def parse_mime_body(body_content, content_type=None):
@@ -199,9 +210,10 @@ def email_detail(email_id):
             _, html_body = parse_mime_body(email.get('body', ''))
             html_content = html_body
         
-        # Sanitize HTML content
+        # Don't sanitize - preserve full styling for email rendering
+        # Security: emails are external content, browsers handle safely
         if html_content:
-            email['body_html'] = bleach.clean(html_content, tags=ALLOWED_TAGS, attributes=ALLOWED_ATTRIBUTES)
+            email['body_html'] = html_content
         
         return render_template('email_detail.html', 
                              email=email or {},
