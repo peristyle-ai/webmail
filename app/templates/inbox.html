@@ -23,18 +23,24 @@
     </div>
     
     <!-- Bulk Actions Bar -->
-    <form id="bulk-action-form" method="post" action="{{ url_for('emails.bulk_delete') }}">
-        <input type="hidden" name="email_ids" id="selected-ids">
-        
-        <div id="bulk-actions" class="hidden mb-4 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 flex items-center justify-between">
-            <div class="flex items-center">
-                <span id="selected-count" class="text-sm text-gray-700 mr-4">0 selected</span>
-                <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded text-sm">
-                    <i class="fas fa-trash mr-1"></i> Delete Selected
-                </button>
-            </div>
+    <input type="hidden" name="email_ids" id="selected-ids">
+    
+    <div id="bulk-actions" class="hidden mb-4 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center">
+            <span id="selected-count" class="text-sm text-gray-700 mr-4">0 selected</span>
         </div>
-    </form>
+        <div class="flex items-center space-x-2">
+            <button id="bulk-delete-btn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded text-sm">
+                <i class="fas fa-trash mr-1"></i> Delete
+            </button>
+            <button id="block-sender-btn" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-1.5 rounded text-sm">
+                <i class="fas fa-ban mr-1"></i> Block Sender
+            </button>
+            <button id="block-domain-btn" class="bg-orange-800 hover:bg-orange-900 text-white px-4 py-1.5 rounded text-sm">
+                <i class="fas fa-globe mr-1"></i> Block Domain
+            </button>
+        </div>
+    </div>
     
     <!-- Email List -->
     <div class="bg-white rounded-lg shadow">
@@ -135,7 +141,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const bulkActions = document.getElementById('bulk-actions');
     const selectedCount = document.getElementById('selected-count');
     const selectedIds = document.getElementById('selected-ids');
-    const bulkForm = document.getElementById('bulk-action-form');
+    const bulkDeleteBtn = document.getElementById('bulk-delete-btn');
+    const blockSenderBtn = document.getElementById('block-sender-btn');
+    const blockDomainBtn = document.getElementById('block-domain-btn');
     
     function updateBulkActions() {
         const selected = Array.from(checkboxes).filter(c => c.checked);
@@ -149,6 +157,19 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    function performBulkAction(action, confirmMsg) {
+        const selected = Array.from(checkboxes).filter(c => c.checked);
+        if (selected.length === 0) return;
+        if (!confirm(confirmMsg + selected.length + ' email(s)?')) return;
+        
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = action;
+        form.innerHTML = '<input type="hidden" name="email_ids" value="' + selectedIds.value + '">';
+        document.body.appendChild(form);
+        form.submit();
+    }
+    
     selectAll.addEventListener('change', function() {
         checkboxes.forEach(cb => cb.checked = this.checked);
         updateBulkActions();
@@ -158,15 +179,16 @@ document.addEventListener('DOMContentLoaded', function() {
         cb.addEventListener('change', updateBulkActions);
     });
     
-    bulkForm.addEventListener('submit', function(e) {
-        const selected = Array.from(checkboxes).filter(c => c.checked);
-        if (selected.length === 0) {
-            e.preventDefault();
-            return;
-        }
-        if (!confirm('Delete ' + selected.length + ' email(s)?')) {
-            e.preventDefault();
-        }
+    bulkDeleteBtn.addEventListener('click', function() {
+        performBulkAction("{{ url_for('emails.bulk_delete') }}", 'Delete ');
+    });
+    
+    blockSenderBtn.addEventListener('click', function() {
+        performBulkAction("{{ url_for('emails.bulk_block_sender') }}", 'Block sender for ');
+    });
+    
+    blockDomainBtn.addEventListener('click', function() {
+        performBulkAction("{{ url_for('emails.bulk_block_domain') }}", 'Block domain for ');
     });
 });
 </script>

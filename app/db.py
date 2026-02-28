@@ -55,6 +55,26 @@ def init_db():
         )
     """)
     
+    # Sender blocklist table
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS sender_blocklist (
+            id SERIAL PRIMARY KEY,
+            email VARCHAR(255),
+            domain VARCHAR(255),
+            blocked_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    
+    # Add unique constraints via partial indexes
+    db.execute("""
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_sender_blocklist_email 
+        ON sender_blocklist(email) WHERE email IS NOT NULL
+    """)
+    db.execute("""
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_sender_blocklist_domain 
+        ON sender_blocklist(domain) WHERE email IS NULL AND domain IS NOT NULL
+    """)
+    
     # User preferences table
     db.execute("""
         CREATE TABLE IF NOT EXISTS user_preferences (

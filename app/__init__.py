@@ -15,12 +15,14 @@ def create_app():
     from app.routes.folders import folders_bp
     from app.routes.whitelist import whitelist_bp
     from app.routes.blacklist import blacklist_bp
+    from app.routes.blocklist import blocklist_bp
     
     app.register_blueprint(auth_bp)
     app.register_blueprint(emails_bp)
     app.register_blueprint(folders_bp)
     app.register_blueprint(whitelist_bp)
     app.register_blueprint(blacklist_bp)
+    app.register_blueprint(blocklist_bp)
     
     # Register error handlers
     @app.errorhandler(404)

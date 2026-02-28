@@ -134,6 +134,32 @@ class MailServerAPI:
         """Check if IP is blacklisted"""
         return self._make_request('GET', f'/api/blacklist/ip/check/{ip_address}', token)
     
+    # Sender Blocklist (mail server)
+    def block_sender(self, token, email=None, domain=None, notes=None):
+        """Block a sender email or domain on the mail server"""
+        data = {}
+        if email:
+            data['email'] = email
+        if domain:
+            data['domain'] = domain
+        if notes:
+            data['notes'] = notes
+        return self._make_request('POST', '/api/blacklist/sender', token, json=data)
+    
+    def unblock_sender(self, token, block_id):
+        """Remove a sender from the mail server blocklist"""
+        return self._make_request('DELETE', f'/api/blacklist/sender/{block_id}', token)
+    
+    def get_sender_blocklist(self, token, page=1, limit=50):
+        """Get sender blocklist from mail server"""
+        params = {'page': page, 'limit': limit}
+        return self._make_request('GET', '/api/blacklist/sender', token, params=params)
+    
+    def check_sender_blocked(self, token, email):
+        """Check if a sender is blocked on the mail server"""
+        params = {'email': email}
+        return self._make_request('GET', '/api/blacklist/sender/check', token, params=params)
+    
     # Delivery Status
     def get_delivery_status(self, token, email_id):
         """Get email delivery status"""

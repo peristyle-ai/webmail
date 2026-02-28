@@ -55,6 +55,20 @@
                 <i class="fas fa-trash mr-2"></i>Delete
             </button>
         </form>
+        
+        <form action="{{ url_for('emails.block_sender', email_id=email.id) }}" method="post" class="inline"
+              onsubmit="return confirm('Block this sender and delete email?')">
+            <button type="submit" class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700">
+                <i class="fas fa-ban mr-2"></i>Block Sender
+            </button>
+        </form>
+        
+        <form action="{{ url_for('emails.block_domain', email_id=email.id) }}" method="post" class="inline"
+              onsubmit="return confirm('Block entire domain and delete email?')">
+            <button type="submit" class="px-4 py-2 bg-orange-800 text-white rounded-lg hover:bg-orange-900">
+                <i class="fas fa-globe mr-2"></i>Block Domain
+            </button>
+        </form>
     </div>
     
     <!-- Email Header -->

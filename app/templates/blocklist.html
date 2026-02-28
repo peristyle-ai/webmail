@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}Sender Blocklist - PyPG Mail{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">
+            <i class="fas fa-ban mr-2 text-red-600"></i>Sender Blocklist
+        </h1>
+        <a href="{{ url_for('emails.inbox') }}" class="text-blue-600 hover:text-blue-800">
+            <i class="fas fa-arrow-left mr-1"></i>Back to Inbox
+        </a>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow">
+        <div class="p-6 border-b border-gray-200">
+            <h2 class="text-lg font-semibold mb-4">Add to Blocklist</h2>
+            <form action="{{ url_for('blocklist.add_entry') }}" method="post" class="flex gap-4">
+                <div class="flex-1">
+                    <input type="email" name="email" placeholder="Email address (e.g., spam@example.com)"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="flex-1">
+                    <input type="text" name="domain" placeholder="Or domain (e.g., spamdomain.com)"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <button type="submit" class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                    <i class="fas fa-plus mr-2"></i>Add
+                </button>
+            </form>
+        </div>
+        
+        {% if entries %}
+        <div class="divide-y divide-gray-200">
+            {% for entry in entries %}
+            <div class="px-6 py-4 flex items-center justify-between">
+                <div>
+                    {% if entry.email %}
+                    <div class="font-medium text-gray-900">
+                        <i class="fas fa-envelope mr-2 text-gray-400"></i>{{ entry.email }}
+                    </div>
+                    {% endif %}
+                    {% if entry.domain and not entry.email %}
+                    <div class="font-medium text-gray-900">
+                        <i class="fas fa-globe mr-2 text-gray-400"></i>{{ entry.domain }}
+                    </div>
+                    {% elif entry.domain and entry.email %}
+                    <div class="text-sm text-gray-500 ml-6">
+                        Domain: {{ entry.domain }}
+                    </div>
+                    {% endif %}
+                    <div class="text-xs text-gray-400">
+                        {% if entry.blocked_at %}
+                            Blocked {{ entry.blocked_at[:19] if entry.blocked_at is string else entry.blocked_at.strftime('%Y-%m-%d %H:%M') }}
+                        {% else %}
+                            Blocked Unknown
+                        {% endif %}
+                    </div>
+                </div>
+                <form action="{{ url_for('blocklist.remove_entry', entry_id=entry.id) }}" method="post" class="inline">
+                    <button type="submit" class="px-3 py-1 text-red-600 hover:bg-red-50 rounded">
+                        <i class="fas fa-times"></i> Remove
+                    </button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="p-8 text-center text-gray-500">
+            <i class="fas fa-ban text-6xl mb-4 text-gray-300"></i>
+            <p>No blocked senders or domains.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

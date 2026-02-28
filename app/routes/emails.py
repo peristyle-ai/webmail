@@ -9,8 +9,36 @@ from email.parser import BytesParser
 emails_bp = Blueprint('emails', __name__)
 api = MailServerAPI()
 
-ALLOWED_TAGS = ['p', 'br', 'strong', 'em', 'u', 'a', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'blockquote', 'table', 'tr', 'td', 'th', 'span', 'div', 'img']
-ALLOWED_ATTRIBUTES = {'a': ['href', 'title'], 'img': ['src', 'alt', 'width', 'height']}
+ALLOWED_TAGS = [
+    'p', 'br', 'strong', 'em', 'u', 'a', 'ul', 'ol', 'li', 
+    'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 
+    'blockquote', 'pre', 'code',
+    'table', 'thead', 'tbody', 'tfoot', 'tr', 'td', 'th', 'caption',
+    'span', 'div', 'img', 
+    'hr', 'sub', 'sup', 'small', 'mark',
+    'article', 'section', 'header', 'footer', 'main', 'aside',
+    'figure', 'figcaption'
+]
+ALLOWED_ATTRIBUTES = {
+    'a': ['href', 'title', 'target', 'rel'],
+    'img': ['src', 'alt', 'width', 'height', 'style'],
+    'table': ['width', 'cellpadding', 'cellspacing', 'border', 'style'],
+    'td': ['colspan', 'rowspan', 'width', 'style', 'align', 'valign'],
+    'th': ['colspan', 'rowspan', 'width', 'style', 'align', 'valign'],
+    'tr': ['style'],
+    'div': ['style', 'class'],
+    'span': ['style', 'class'],
+    'p': ['style', 'class'],
+    'h1': ['style', 'class'],
+    'h2': ['style', 'class'],
+    'h3': ['style', 'class'],
+    'h4': ['style', 'class'],
+    'h5': ['style', 'class'],
+    'h6': ['style', 'class'],
+    'blockquote': ['style', 'class'],
+    'figure': ['style', 'class'],
+    'figcaption': ['style', 'class'],
+}
 
 def parse_mime_body(body_content, content_type=None):
     """Parse MIME content and extract HTML/text body."""
@@ -210,12 +238,150 @@ def compose():
             flash(str(e), 'error')
             return render_template('compose.html', to=to, subject=subject, body=body)
     
-    # Pre-fill from query params (for reply/forward)
     to = request.args.get('to', '')
     subject = request.args.get('subject', '')
     body = request.args.get('body', '')
     
     return render_template('compose.html', to=to, subject=subject, body=body)
+
+def add_to_blocklist(email_address=None, domain=None):
+    """Block sender or domain on mail server"""
+    try:
+        token = session.get('token')
+        if token:
+            api.block_sender(token, email=email_address, domain=domain)
+    except Exception as e:
+        print(f"Error blocking on server: {e}")
+
+def get_sender_email_from_email_id(email_id):
+    """Get sender email from an email by ID"""
+    try:
+        email = api.get_email(session['token'], email_id)
+        if email:
+            sender = email.get('sender')
+            if sender and sender.get('email'):
+                return sender['email']
+    except:
+        pass
+    return None
+
+@emails_bp.route('/emails/<int:email_id>/block-sender', methods=['POST'])
+@require_auth
+def block_sender(email_id):
+    try:
+        sender_email = get_sender_email_from_email_id(email_id)
+        if sender_email:
+            add_to_blocklist(email_address=sender_email)
+            api.delete_email(session['token'], email_id)
+            flash(f'Blocked sender: {sender_email}', 'success')
+        else:
+            flash('Could not determine sender email', 'error')
+    except AuthenticationError:
+        session.clear()
+        flash('Session expired', 'warning')
+        return redirect(url_for('auth.login'))
+    except Exception as e:
+        flash(str(e), 'error')
+    return redirect(url_for('emails.inbox'))
+
+@emails_bp.route('/emails/<int:email_id>/block-domain', methods=['POST'])
+@require_auth
+def block_domain(email_id):
+    try:
+        sender_email = get_sender_email_from_email_id(email_id)
+        if sender_email and '@' in sender_email:
+            domain = sender_email.split('@')[-1]
+            add_to_blocklist(domain=domain)
+            api.delete_email(session['token'], email_id)
+            flash(f'Blocked domain: {domain}', 'success')
+        else:
+            flash('Could not determine sender domain', 'error')
+    except AuthenticationError:
+        session.clear()
+        flash('Session expired', 'warning')
+        return redirect(url_for('auth.login'))
+    except Exception as e:
+        flash(str(e), 'error')
+    return redirect(url_for('emails.inbox'))
+
+@emails_bp.route('/emails/bulk-block-sender', methods=['POST'])
+@require_auth
+def bulk_block_sender():
+    email_ids_str = request.form.get('email_ids', '')
+    if not email_ids_str:
+        flash('No emails selected', 'error')
+        return redirect(url_for('emails.inbox'))
+    
+    email_ids = [int(id) for id in email_ids_str.split(',') if id.isdigit()]
+    if not email_ids:
+        flash('Invalid selection', 'error')
+        return redirect(url_for('emails.inbox'))
+    
+    blocked_senders = set()
+    deleted_count = 0
+    errors = []
+    
+    for email_id in email_ids:
+        try:
+            sender_email = get_sender_email_from_email_id(email_id)
+            if sender_email:
+                add_to_blocklist(email_address=sender_email)
+                blocked_senders.add(sender_email)
+            api.delete_email(session['token'], email_id)
+            deleted_count += 1
+        except AuthenticationError:
+            session.clear()
+            flash('Session expired', 'warning')
+            return redirect(url_for('auth.login'))
+        except Exception as e:
+            errors.append(str(e))
+    
+    if blocked_senders:
+        flash(f'Blocked {len(blocked_senders)} sender(s), deleted {deleted_count} email(s)', 'success')
+    if errors:
+        flash('Some errors: ' + '; '.join(errors), 'error')
+    
+    return redirect(url_for('emails.inbox'))
+
+@emails_bp.route('/emails/bulk-block-domain', methods=['POST'])
+@require_auth
+def bulk_block_domain():
+    email_ids_str = request.form.get('email_ids', '')
+    if not email_ids_str:
+        flash('No emails selected', 'error')
+        return redirect(url_for('emails.inbox'))
+    
+    email_ids = [int(id) for id in email_ids_str.split(',') if id.isdigit()]
+    if not email_ids:
+        flash('Invalid selection', 'error')
+        return redirect(url_for('emails.inbox'))
+    
+    blocked_domains = set()
+    deleted_count = 0
+    errors = []
+    
+    for email_id in email_ids:
+        try:
+            sender_email = get_sender_email_from_email_id(email_id)
+            if sender_email and '@' in sender_email:
+                domain = sender_email.split('@')[-1]
+                add_to_blocklist(domain=domain)
+                blocked_domains.add(domain)
+            api.delete_email(session['token'], email_id)
+            deleted_count += 1
+        except AuthenticationError:
+            session.clear()
+            flash('Session expired', 'warning')
+            return redirect(url_for('auth.login'))
+        except Exception as e:
+            errors.append(str(e))
+    
+    if blocked_domains:
+        flash(f'Blocked {len(blocked_domains)} domain(s), deleted {deleted_count} email(s)', 'success')
+    if errors:
+        flash('Some errors: ' + '; '.join(errors), 'error')
+    
+    return redirect(url_for('emails.inbox'))
 
 @emails_bp.route('/emails/<int:email_id>/reply')
 @require_auth
