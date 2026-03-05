@@ -30,6 +30,15 @@
             <span id="selected-count" class="text-sm text-gray-700 mr-4">0 selected</span>
         </div>
         <div class="flex items-center space-x-2">
+            <select id="bulk-folder-select" class="px-3 py-1.5 border border-gray-300 rounded text-sm">
+                <option value="">Move to...</option>
+                {% for folder in folders %}
+                <option value="{{ folder.id }}">{{ folder.name }}</option>
+                {% endfor %}
+            </select>
+            <button id="bulk-move-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded text-sm">
+                <i class="fas fa-folder mr-1"></i> Move
+            </button>
             <button id="bulk-delete-btn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded text-sm">
                 <i class="fas fa-trash mr-1"></i> Delete
             </button>
@@ -189,6 +198,27 @@ document.addEventListener('DOMContentLoaded', function() {
     
     blockDomainBtn.addEventListener('click', function() {
         performBulkAction("{{ url_for('emails.bulk_block_domain') }}", 'Block domain for ');
+    });
+    
+    document.getElementById('bulk-move-btn').addEventListener('click', function() {
+        const selected = Array.from(checkboxes).filter(c => c.checked);
+        if (selected.length === 0) {
+            alert('Please select emails to move');
+            return;
+        }
+        const folderId = document.getElementById('bulk-folder-select').value;
+        if (!folderId) {
+            alert('Please select a folder');
+            return;
+        }
+        
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = "{{ url_for('emails.bulk_move') }}";
+        form.innerHTML = '<input type="hidden" name="email_ids" value="' + selectedIds.value + '">' +
+                         '<input type="hidden" name="folder_id" value="' + folderId + '">';
+        document.body.appendChild(form);
+        form.submit();
     });
 });
 </script>

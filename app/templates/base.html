@@ -77,8 +77,13 @@
             
             <!-- Navigation -->
             <nav class="flex-1 px-2">
-                <a href="{{ url_for('emails.inbox') }}" 
-                   class="sidebar-link flex items-center px-4 py-2 rounded-lg mb-1 {% if request.endpoint == 'emails.inbox' and not current_folder %}active{% endif %}">
+                {% set inbox_folder = folders | selectattr('name', 'equalto', 'Inbox') | first %}
+                {% set sent_folder = folders | selectattr('name', 'equalto', 'Sent') | first %}
+                {% set drafts_folder = folders | selectattr('name', 'equalto', 'Drafts') | first %}
+                {% set trash_folder = folders | selectattr('name', 'equalto', 'Trash') | first %}
+                
+                <a href="{{ url_for('emails.inbox', folder_id=inbox_folder.id) if inbox_folder else url_for('emails.inbox') }}" 
+                   class="sidebar-link flex items-center px-4 py-2 rounded-lg mb-1 {% if request.endpoint == 'emails.inbox' and (not current_folder or (inbox_folder and current_folder == inbox_folder.id)) %}active{% endif %}">
                     <i class="fas fa-inbox w-6"></i>
                     <span>Inbox</span>
                     {% if unread_count %}
@@ -86,17 +91,21 @@
                     {% endif %}
                 </a>
                 
-                <a href="{{ url_for('emails.inbox', folder_id=2) }}" 
-                   class="sidebar-link flex items-center px-4 py-2 rounded-lg mb-1 {% if current_folder == 2 %}active{% endif %}">
+                {% if sent_folder %}
+                <a href="{{ url_for('emails.inbox', folder_id=sent_folder.id) }}" 
+                   class="sidebar-link flex items-center px-4 py-2 rounded-lg mb-1 {% if current_folder == sent_folder.id %}active{% endif %}">
                     <i class="fas fa-paper-plane w-6"></i>
                     <span>Sent</span>
                 </a>
+                {% endif %}
                 
-                <a href="{{ url_for('emails.inbox', folder_id=3) }}" 
-                   class="sidebar-link flex items-center px-4 py-2 rounded-lg mb-1 {% if current_folder == 3 %}active{% endif %}">
+                {% if drafts_folder %}
+                <a href="{{ url_for('emails.inbox', folder_id=drafts_folder.id) }}" 
+                   class="sidebar-link flex items-center px-4 py-2 rounded-lg mb-1 {% if current_folder == drafts_folder.id %}active{% endif %}">
                     <i class="fas fa-file w-6"></i>
                     <span>Drafts</span>
                 </a>
+                {% endif %}
                 
                 <a href="{{ url_for('emails.inbox', flag='starred') }}" 
                    class="sidebar-link flex items-center px-4 py-2 rounded-lg mb-1">
@@ -104,11 +113,13 @@
                     <span>Starred</span>
                 </a>
                 
-                <a href="{{ url_for('emails.inbox', folder_id=4) }}" 
-                   class="sidebar-link flex items-center px-4 py-2 rounded-lg mb-1 {% if current_folder == 4 %}active{% endif %}">
+                {% if trash_folder %}
+                <a href="{{ url_for('emails.inbox', folder_id=trash_folder.id) }}" 
+                   class="sidebar-link flex items-center px-4 py-2 rounded-lg mb-1 {% if current_folder == trash_folder.id %}active{% endif %}">
                     <i class="fas fa-trash w-6"></i>
                     <span>Trash</span>
                 </a>
+                {% endif %}
                 
                 <hr class="my-2 border-gray-200">
                 
@@ -118,7 +129,7 @@
                 </div>
                 
                 {% for folder in folders %}
-                    {% if folder.id > 4 %}  {# Custom folders only #}
+                    {% if folder.name not in ['Inbox', 'Sent', 'Drafts', 'Trash'] %}
                     <a href="{{ url_for('emails.inbox', folder_id=folder.id) }}" 
                        class="sidebar-link flex items-center px-4 py-2 rounded-lg mb-1 {% if current_folder == folder.id %}active{% endif %}">
                         <i class="fas fa-folder w-6"></i>

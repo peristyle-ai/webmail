@@ -105,25 +105,51 @@ def extract_sender_from_headers(headers):
     if not headers:
         return None
     
-    # Normalize line endings and handle multiline headers
     headers_normalized = headers.replace('\r\n', '\n').replace('\r', '\n')
     
-    # Look for From: header - handle various formats:
-    # From: Name <email@domain.com>
-    # From: "Name" <email@domain.com>
-    # From: email@domain.com
-    # From: "Name"<email@domain.com> (no space)
-    from_match = re.search(r'From:\s*(?:"?([^"<\n]+)"?\s*)?<?([^>\s\n]+@[^>\s\n]+)>?', headers_normalized)
+    # Pattern 1: From: "Name" <email> or From: Name <email>
+    from_match = re.search(r'From:\s*"([^"]+)"\s*<([^>]+)>', headers_normalized)
     if from_match:
-        email = from_match.group(2).strip() if from_match.group(2) else None
-        name = from_match.group(1).strip() if from_match.group(1) else None
-        if email:
-            return {'email': email, 'name': name}
+        return {'email': from_match.group(2).strip(), 'name': from_match.group(1).strip()}
     
-    # Try simpler pattern for just email anywhere in headers
-    email_match = re.search(r'[\w\.-]+@[\w\.-]+\.\w+', headers_normalized)
+    # Pattern 2: From: Name <email> (no quotes)
+    from_match = re.search(r'From:\s*([^<\n]+?)\s*<([^>]+)>', headers_normalized)
+    if from_match:
+        return {'email': from_match.group(2).strip(), 'name': from_match.group(1).strip()}
+    
+    # Pattern 3: From: <email> or From: email (no name)
+    from_match = re.search(r'From:\s*<?([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})>?', headers_normalized, re.IGNORECASE)
+    if from_match:
+        return {'email': from_match.group(1).strip(), 'name': None}
+    
+    # Fallback: find first email in headers
+    email_match = re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', headers_normalized)
     if email_match:
         return {'email': email_match.group(0), 'name': None}
+    
+    return None
+
+def extract_recipient_from_headers(headers):
+    """Extract recipient email from email headers"""
+    if not headers:
+        return None
+    
+    headers_normalized = headers.replace('\r\n', '\n').replace('\r', '\n')
+    
+    # Pattern 1: To: "Name" <email>
+    to_match = re.search(r'To:\s*"([^"]+)"\s*<([^>]+)>', headers_normalized)
+    if to_match:
+        return {'email': to_match.group(2).strip(), 'name': to_match.group(1).strip()}
+    
+    # Pattern 2: To: Name <email> (no quotes)
+    to_match = re.search(r'To:\s*([^<\n]+?)\s*<([^>]+)>', headers_normalized)
+    if to_match:
+        return {'email': to_match.group(2).strip(), 'name': to_match.group(1).strip()}
+    
+    # Pattern 3: To: <email> or To: email (no name)
+    to_match = re.search(r'To:\s*<?([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})>?', headers_normalized, re.IGNORECASE)
+    if to_match:
+        return {'email': to_match.group(1).strip(), 'name': None}
     
     return None
 
@@ -140,8 +166,20 @@ def inbox():
         page = request.args.get('page', 1, type=int)
         limit = 20
         
-        emails_data = api.get_emails(session['token'], folder_id=folder_id, page=page, limit=limit)
+        # Get folders first to find Inbox ID if not specified
         folders_data = api.get_folders(session['token'])
+        if isinstance(folders_data, list):
+            folders_list = folders_data
+        else:
+            folders_list = folders_data.get('folders', [])
+        
+        # Default to Inbox folder if not specified
+        if folder_id is None:
+            inbox_folder = next((f for f in folders_list if f.get('name', '').lower() == 'inbox'), None)
+            if inbox_folder:
+                folder_id = inbox_folder.get('id')
+        
+        emails_data = api.get_emails(session['token'], folder_id=folder_id, page=page, limit=limit)
         
         # Handle both list and dict responses
         if isinstance(emails_data, list):
@@ -150,6 +188,11 @@ def inbox():
         else:
             emails_list = emails_data.get('emails', [])
             total_emails = emails_data.get('total', len(emails_list))
+        
+        # Client-side filter by folder (workaround for API not filtering)
+        if folder_id:
+            emails_list = [e for e in emails_list if e.get('folder_id') == folder_id]
+            total_emails = len(emails_list)
         
         # Handle folders response
         if isinstance(folders_data, list):
@@ -201,6 +244,12 @@ def email_detail(email_id):
             sender = extract_sender_from_headers(email['headers'])
             if sender:
                 email['sender'] = sender
+        
+        # Enrich email with recipient info from headers if missing
+        if email and not email.get('recipient') and email.get('headers'):
+            recipient = extract_recipient_from_headers(email['headers'])
+            if recipient:
+                email['recipient'] = recipient
         
         # Use HTML from API response (body_html field maps to 'html' in response)
         html_content = email.get('html') if email else None
@@ -270,11 +319,24 @@ def get_sender_email_from_email_id(email_id):
     try:
         email = api.get_email(session['token'], email_id)
         if email:
+            # Try sender object first
             sender = email.get('sender')
             if sender and sender.get('email'):
                 return sender['email']
-    except:
-        pass
+            # Fallback: extract from headers
+            if email.get('headers'):
+                sender = extract_sender_from_headers(email['headers'])
+                if sender and sender.get('email'):
+                    return sender['email']
+            # Last resort: use raw headers string to find From
+            headers = email.get('headers', '')
+            if headers and 'From:' in headers:
+                import re
+                from_match = re.search(r'From:\s*(?:"?[^"<\n]+"?\s*)?<?([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})>?', headers, re.IGNORECASE)
+                if from_match:
+                    return from_match.group(1).lower()
+    except Exception as e:
+        print(f"Error getting sender: {e}")
     return None
 
 @emails_bp.route('/emails/<int:email_id>/block-sender', methods=['POST'])
@@ -287,7 +349,7 @@ def block_sender(email_id):
             api.delete_email(session['token'], email_id)
             flash(f'Blocked sender: {sender_email}', 'success')
         else:
-            flash('Could not determine sender email', 'error')
+            flash(f'Cannot block: email {email_id} has no sender info (headers may be missing)', 'error')
     except AuthenticationError:
         session.clear()
         flash('Session expired', 'warning')
@@ -306,8 +368,10 @@ def block_domain(email_id):
             add_to_blocklist(domain=domain)
             api.delete_email(session['token'], email_id)
             flash(f'Blocked domain: {domain}', 'success')
+        elif sender_email:
+            flash(f'Cannot block domain: sender email has no @ symbol', 'error')
         else:
-            flash('Could not determine sender domain', 'error')
+            flash(f'Cannot block: email {email_id} has no sender info (headers may be missing)', 'error')
     except AuthenticationError:
         session.clear()
         flash('Session expired', 'warning')
@@ -392,6 +456,46 @@ def bulk_block_domain():
         flash(f'Blocked {len(blocked_domains)} domain(s), deleted {deleted_count} email(s)', 'success')
     if errors:
         flash('Some errors: ' + '; '.join(errors), 'error')
+    
+    return redirect(url_for('emails.inbox'))
+
+@emails_bp.route('/emails/bulk-move', methods=['POST'])
+@require_auth
+def bulk_move():
+    email_ids_str = request.form.get('email_ids', '')
+    folder_id = request.form.get('folder_id', type=int)
+    
+    if not email_ids_str:
+        flash('No emails selected', 'error')
+        return redirect(url_for('emails.inbox'))
+    
+    if not folder_id:
+        flash('Please select a folder', 'error')
+        return redirect(url_for('emails.inbox'))
+    
+    email_ids = [int(id) for id in email_ids_str.split(',') if id.isdigit()]
+    if not email_ids:
+        flash('Invalid selection', 'error')
+        return redirect(url_for('emails.inbox'))
+    
+    moved_count = 0
+    errors = []
+    
+    for email_id in email_ids:
+        try:
+            api.move_email(session['token'], email_id, folder_id)
+            moved_count += 1
+        except AuthenticationError:
+            session.clear()
+            flash('Session expired', 'warning')
+            return redirect(url_for('auth.login'))
+        except Exception as e:
+            errors.append(str(e))
+    
+    if moved_count > 0:
+        flash(f'Moved {moved_count} email(s)', 'success')
+    if errors:
+        flash('Some emails could not be moved: ' + '; '.join(errors), 'error')
     
     return redirect(url_for('emails.inbox'))
 
