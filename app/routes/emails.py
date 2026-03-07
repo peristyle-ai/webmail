@@ -505,19 +505,37 @@ def reply(email_id):
     try:
         email = api.get_email(session['token'], email_id)
         
+        if not email:
+            flash('Email not found', 'error')
+            return redirect(url_for('emails.inbox'))
+        
+        # Extract sender from headers if not in response
+        if not email.get('sender') and email.get('headers'):
+            sender = extract_sender_from_headers(email['headers'])
+            if sender:
+                email['sender'] = sender
+        
         # Build reply
-        to = email.get('sender', {}).get('email', '')
-        subject = f"Re: {email.get('subject', '')}"
-        if not subject.startswith('Re: '):
+        to = email.get('sender', {}).get('email', '') if email.get('sender') else ''
+        subject = email.get('subject', '')
+        if subject and not subject.startswith('Re: '):
             subject = f"Re: {subject}"
+        elif not subject:
+            subject = "Re: (No subject)"
         
         # Quote original
-        quoted_body = f"\n\nOn {email.get('created_at', '')}, {email.get('sender', {}).get('email', '')} wrote:\n> {email.get('body', '').replace(chr(10), chr(10) + '> ')}"
+        sender_email = email.get('sender', {}).get('email', 'Unknown') if email.get('sender') else 'Unknown'
+        body_text = email.get('body', '')
+        quoted_body = f"\n\nOn {email.get('created_at', '')}, {sender_email} wrote:\n> {body_text.replace(chr(10), chr(10) + '> ')}"
         
         return redirect(url_for('emails.compose', to=to, subject=subject, body=quoted_body))
-    except (AuthenticationError, APIError) as e:
+    except AuthenticationError:
+        session.clear()
+        flash('Session expired', 'warning')
+        return redirect(url_for('auth.login'))
+    except APIError as e:
         flash(str(e), 'error')
-        return redirect(url_for('emails.email_detail', email_id=email_id))
+        return redirect(url_for('emails.inbox'))
 
 @emails_bp.route('/emails/<int:email_id>/forward')
 @require_auth
