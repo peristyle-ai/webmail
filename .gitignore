@@ -135,3 +135,6 @@ certs/
 
 #OpenCode Sessions
 session-ses*
+
+#backups
+backups/
