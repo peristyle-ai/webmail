@@ -179,20 +179,25 @@ def inbox():
             if inbox_folder:
                 folder_id = inbox_folder.get('id')
         
-        emails_data = api.get_emails(session['token'], folder_id=folder_id, page=page, limit=limit)
+        # Fetch all emails (API doesn't support pagination properly)
+        # Use a large limit to get all emails, then do client-side pagination
+        emails_data = api.get_emails(session['token'], folder_id=folder_id, page=1, limit=1000)
         
         # Handle both list and dict responses
         if isinstance(emails_data, list):
-            emails_list = emails_data
-            total_emails = len(emails_data)
+            all_emails = emails_data
         else:
-            emails_list = emails_data.get('emails', [])
-            total_emails = emails_data.get('total', len(emails_list))
+            all_emails = emails_data.get('emails', [])
         
         # Client-side filter by folder (workaround for API not filtering)
         if folder_id:
-            emails_list = [e for e in emails_list if e.get('folder_id') == folder_id]
-            total_emails = len(emails_list)
+            all_emails = [e for e in all_emails if e.get('folder_id') == folder_id]
+        
+        # Client-side pagination
+        total_emails = len(all_emails)
+        start_idx = (page - 1) * limit
+        end_idx = start_idx + limit
+        emails_list = all_emails[start_idx:end_idx]
         
         # Handle folders response
         if isinstance(folders_data, list):
@@ -680,6 +685,13 @@ def search():
             folders_list = folders_data
         else:
             folders_list = folders_data.get('folders', [])
+        
+        # Enrich emails with sender info from headers
+        for email in emails_list:
+            if not email.get('sender') and email.get('headers'):
+                sender = extract_sender_from_headers(email['headers'])
+                if sender:
+                    email['sender'] = sender
         
         return render_template('inbox.html',
                              emails=emails_list,
