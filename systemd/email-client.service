@@ -10,7 +10,7 @@ Environment=FLASK_APP=run.py
 Environment=FLASK_ENV=production
 Environment=PYTHONPATH=/opt/py_pg_accounts/git/py_pg_client
 
-ExecStart=/opt/py_pg_accounts/git/py_pg_client/venv/bin/python /opt/py_pg_accounts/git/py_pg_client/run.py
+ExecStart=/opt/py_pg_accounts/git/py_pg_client/.venv/bin/python /opt/py_pg_accounts/git/py_pg_client/run.py
 
 Restart=always
 RestartSec=10

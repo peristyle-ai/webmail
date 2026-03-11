@@ -15,6 +15,7 @@ class Config:
     # Flask
     DEBUG = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
     PORT = int(os.environ.get('PORT', 5005))
+    HOST = os.environ.get('HOST', '127.0.0.1')
     
     # Session
     PERMANENT_SESSION_LIFETIME = 86400  # 24 hours, matching JWT token
