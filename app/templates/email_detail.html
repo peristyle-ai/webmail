@@ -98,21 +98,46 @@
         </div>
     </div>
     
-    <!-- Email Body -->
-    <div class="prose max-w-none">
-        {% if email.body_html %}
-            <div class="email-body">{{ email.body_html | safe }}</div>
-        {% elif email.body %}
-            {% set first_char = (email.body.strip()[:1] if email.body.strip() else '') %}
-            {% if first_char == '<' %}
-                <div class="email-body">{{ email.body | safe }}</div>
-            {% else %}
-                <div class="email-body whitespace-pre-wrap">{{ email.body }}</div>
-            {% endif %}
+    <!-- Email Body - sandboxed in iframe -->
+    {% if email.body_html %}
+        {% set email_content = email.body_html %}
+    {% elif email.body %}
+        {% set first_char = (email.body.strip()[:1] if email.body.strip() else '') %}
+        {% if first_char == '<' %}
+            {% set email_content = email.body %}
         {% else %}
-            <div class="email-body whitespace-pre-wrap">(No content)</div>
+            {% set email_content = '<pre style="white-space: pre-wrap; font-family: inherit; margin: 0;">' + (email.body | e) + '</pre>' %}
         {% endif %}
-    </div>
+    {% else %}
+        {% set email_content = '<p style="color: #6b7280;">(No content)</p>' %}
+    {% endif %}
+    
+    <iframe id="email-frame" 
+            sandbox="allow-same-origin" 
+            class="w-full border-0 bg-white rounded-lg"
+            style="min-height: 300px;"></iframe>
+    
+    <script>
+    (function() {
+        var iframe = document.getElementById('email-frame');
+        var content = {{ email_content | tojson }};
+        
+        var html = '<!DOCTYPE html><html><head>' +
+            '<style>' +
+            'html, body { margin: 0; padding: 16px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; }' +
+            'img { max-width: 100%; height: auto; }' +
+            'pre { white-space: pre-wrap; word-wrap: break-word; }' +
+            '</style>' +
+            '</head><body>' + content + '</body></html>';
+        
+        iframe.srcdoc = html;
+        
+        iframe.onload = function() {
+            var doc = iframe.contentDocument || iframe.contentWindow.document;
+            iframe.style.height = doc.body.scrollHeight + 32 + 'px';
+        };
+    })();
+    </script>
     
     <!-- Attachments -->
     {% if email.attachments %}
@@ -132,16 +157,6 @@
 </div>
 
 <style>
-    .email-body {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        line-height: 1.6;
-    }
-    .email-body p { margin-bottom: 1em; }
-    .email-body blockquote { 
-        border-left: 4px solid #e5e7eb; 
-        padding-left: 1rem; 
-        margin-left: 0; 
-        color: #6b7280;
-    }
+    /* Email content is now sandboxed in iframe */
 </style>
 {% endblock %}
