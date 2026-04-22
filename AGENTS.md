@@ -2,14 +2,14 @@
 
 ## Overview
 
-A Gmail-like web email client connecting to the mail server at `py_pg_email` (port 5003). This client runs on port 5005.
+A Gmail-like web email client (PWA-enabled) connecting to the mail server at `py_pg_email` (port 5003). This client runs on port 5005.
 
 ## Project Structure
 
 ```
 ~/git/py_pg_client/
 ├── app/
-│   ├── __init__.py              # Flask app initialization + blueprints
+│   ├── __init__.py              # Flask app initialization + blueprints + SW route
 │   ├── api_client.py            # Mail server API wrapper
 │   ├── db.py                    # Database connection
 │   ├── routes/
@@ -18,7 +18,11 @@ A Gmail-like web email client connecting to the mail server at `py_pg_email` (po
 │   │   ├── folders.py           # Folder management
 │   │   ├── whitelist.py         # Domain whitelist
 │   │   └── blacklist.py         # IP blacklist view
-│   └── templates/               # Jinja2 HTML templates
+│   ├── templates/               # Jinja2 HTML templates (mobile-first responsive)
+│   └── static/
+│       ├── manifest.json        # PWA manifest
+│       ├── sw.js                # Service worker
+│       └── icons/               # PWA icons (192x192, 512x512)
 ├── tests/                       # Test files
 ├── config.py                    # Configuration
 ├── requirements.txt             # Python dependencies
@@ -49,7 +53,7 @@ Commands:
 - `systemctl --user stop email-client.service` - stop
 - `journalctl --user -u email-client.service` - view logs
 
-The application runs on `http://localhost:5005`. Authorized user: `the operator@example.com.au`
+The application runs on `http://192.168.4.41:5005`. Authorized user: `the operator@example.com.au`
 
 ## Build/Lint/Test Commands
 
@@ -178,18 +182,27 @@ def require_auth(f):
 
 ### Template Guidelines
 - Use Jinja2 auto-escaping (default) for XSS prevention
-- Sanitize HTML email bodies with `bleach` before display
+- Sanitize HTML email bodies by rendering in sandboxed iframe
+- Mobile-first responsive design with Tailwind CSS
+- PWA-enabled: manifest.json, service worker, mobile meta tags
 
 ### Security
 - Store JWT in Flask session (server-side), never localStorage
 - Validate all user inputs
 - Use parameterized queries via psycopg2
+- Bind to specific IP via `HOST` env var (defaults to 127.0.0.1, set to 192.168.4.41 for production)
 
 ## API Integration
 
 ### Base Configuration
-- Mail Server URL: `http://localhost:5003`
+- Mail Server URL: `http://192.168.4.41:5003`
+- Client URL: `http://192.168.4.41:5005`
 - All endpoints require JWT Bearer token (except `/health`)
+
+### Email Access Control
+- Email visibility is based on **folder ownership**: users can only see/access emails in folders they own (`WHERE f.user_id = current_user_id`)
+- API responses return `sender` and `recipient` as objects `{email, name}`, not flat fields
+- Local delivery creates separate copies: one in sender's Sent folder, one in recipient's Inbox
 
 ### Common Patterns
 ```python
@@ -228,6 +241,7 @@ pytest>=7.0.0 pytest-flask>=1.2.0 pytest-cov>=4.0.0 flake8>=6.0.0 black>=23.0.0 
 3. **Do** handle token expiration gracefully (redirect to login)
 4. **Do** validate all user inputs
 5. **Do** use parameterized queries for DB operations
+6. **Don't** use `0.0.0.0` as HOST — bind to specific IP (`192.168.4.41`)
 
 ## Questions?
 1. Check API guide: `~/git/py_pg_email/coding_agent/API_INTEGRATION_GUIDE.md`

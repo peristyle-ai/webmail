@@ -1,19 +1,26 @@
 # PyPG Client - Gmail-like Email Web Client
 
-A web-based email client that provides a Gmail-like interface for the PyPG mail server running on port 5003.
+A web-based email client that provides a Gmail-like interface for the PyPG mail server running on port 5003. PWA-enabled for mobile use.
 
 ## Features
 
 ### Core Email Management
 - **Authentication**: JWT-based login/logout with session management
 - **Inbox View**: List emails with sender, subject, preview, date
-- **Email Reading**: Full email display with HTML/text support
+- **Email Reading**: Full email display with HTML/text support (sandboxed iframe)
 - **Compose**: Create and send new emails
 - **Reply/Forward**: Email threading actions with pre-filled content
 - **Mark Read/Unread**: Toggle read status
 - **Star/Unstar**: Toggle starred status
 - **Delete**: Move emails to trash
 - **Move to Folder**: Change email folder
+- **Bulk Actions**: Select multiple emails to move, delete, or block sender/domain
+
+### PWA Support
+- **Installable**: Add to home screen on mobile devices
+- **Service Worker**: Offline caching for faster loading
+- **Mobile-First Design**: Responsive layout with hamburger menu, bottom nav, touch-friendly targets
+- **Apple/Android**: Meta tags for both platforms
 
 ### Folder Management
 - **Gmail-style folders**: Inbox, Sent, Drafts, Trash, Starred
@@ -37,9 +44,10 @@ A web-based email client that provides a Gmail-like interface for the PyPG mail 
 
 - **Framework**: Flask + Jinja2 (server-side rendering)
 - **Styling**: TailwindCSS via CDN
+- **PWA**: manifest.json, service worker, mobile-first responsive design
 - **Database**: PostgreSQL (client-side tables only)
-- **API Integration**: RESTful API to mail server on port 5003
-- **Security**: Server-side JWT storage, CSRF protection, XSS prevention
+- **API Integration**: RESTful API to mail server on `http://192.168.4.41:5003`
+- **Security**: Server-side JWT storage, CSRF protection, XSS prevention via sandboxed iframe
 
 ## Setup Instructions
 
@@ -71,15 +79,17 @@ The tables will be created automatically on first run.
 
 Default configuration in `config.py`:
 - Port: 5005
-- Mail Server API: http://localhost:5003
+- Host: 192.168.4.41 (set via `HOST` env var)
+- Mail Server API: `http://192.168.4.41:5003`
 - Database: postgresql://postgres:1234@localhost:5432/mail_server_client
 
-To customize, set environment variables:
+To customize, set environment variables in `.env`:
 ```bash
-export DATABASE_URL="postgresql://user:pass@localhost:5432/mail_server_client"
-export MAIL_SERVER_API_URL="http://localhost:5003"
-export SECRET_KEY="your-secret-key"
-export FLASK_DEBUG="false"
+HOST=192.168.4.41
+DATABASE_URL="postgresql://user:pass@localhost:5432/mail_server_client"
+MAIL_SERVER_API_URL="http://192.168.4.41:5003"
+SECRET_KEY="your-secret-key"
+FLASK_DEBUG="false"
 ```
 
 ### 5. Running the Application
@@ -89,12 +99,12 @@ source venv/bin/activate
 python3 run.py
 ```
 
-The application will be available at: http://localhost:5005
+The application will be available at: http://192.168.4.41:5005
 
 ## Usage
 
 ### Login
-- Navigate to http://localhost:5005
+- Navigate to http://192.168.4.41:5005
 - Default user: the operator@example.com.au
 - Password: (set in mail server)
 
@@ -139,15 +149,19 @@ The application will be available at: http://localhost:5005
 │   │   ├── folders.py           # Folder management
 │   │   ├── whitelist.py         # Domain whitelist
 │   │   └── blacklist.py         # IP blacklist view
-│   └── templates/
-│       ├── base.html            # Base layout with sidebar
-│       ├── login.html           # Login page
-│       ├── inbox.html           # Email list view
-│       ├── email_detail.html    # Single email view
-│       ├── compose.html         # Email composition
-│       ├── folders.html         # Folder management
-│       ├── whitelist.html       # Domain whitelist management
-│       └── blacklist.html       # IP blacklist view
+│   ├── templates/               # Jinja2 HTML templates (mobile-first responsive)
+│   │   ├── base.html            # Base layout with sidebar + bottom nav
+│   │   ├── login.html           # Login page
+│   │   ├── inbox.html           # Email list view
+│   │   ├── email_detail.html    # Single email view (sandboxed iframe)
+│   │   ├── compose.html         # Email composition
+│   │   ├── folders.html         # Folder management
+│   │   ├── whitelist.html       # Domain whitelist management
+│   │   └── blacklist.html       # IP blacklist view
+│   └── static/
+│       ├── manifest.json        # PWA manifest
+│       ├── sw.js                # Service worker
+│       └── icons/               # PWA icons
 ├── config.py                    # Configuration
 ├── requirements.txt             # Python dependencies
 ├── run.py                       # Entry point
@@ -171,8 +185,10 @@ The application will be available at: http://localhost:5005
 ## API Integration
 
 The client integrates with the mail server API:
-- **Base URL**: http://localhost:5003
+- **Base URL**: http://192.168.4.41:5003
 - **Authentication**: JWT Bearer token
+- **Email Access Control**: Users can only see/access emails in folders they own (based on `folders.user_id`)
+- **API Response Format**: `sender` and `recipient` are returned as `{email, name}` objects
 - **Endpoints Used**:
   - `POST /auth/login` - User authentication
   - `GET /api/emails` - List emails
@@ -196,7 +212,7 @@ The client integrates with the mail server API:
 1. **JWT Token Storage**: Tokens are stored server-side in Flask sessions, never exposed to client-side JavaScript
 2. **Session Security**: Secure session cookies with HttpOnly flag
 3. **XSS Prevention**: User input is escaped in templates using Jinja2 auto-escaping
-4. **HTML Sanitization**: Email HTML bodies are sanitized using Bleach before display
+4. **HTML Sanitization**: Email HTML bodies are rendered in a sandboxed iframe to prevent style leakage
 5. **CSRF Protection**: Flask-WTF provides CSRF token protection for forms
 6. **Input Validation**: All form inputs are validated before processing
 
