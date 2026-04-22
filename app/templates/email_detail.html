@@ -3,101 +3,110 @@
 {% block title %}{{ email.subject or '(No subject)' }} - PyPG Mail{% endblock %}
 
 {% block content %}
-<div class="p-6">
-    <!-- Action Bar -->
-    <div class="flex items-center space-x-4 mb-6 pb-4 border-b border-gray-200">
-        <a href="{{ url_for('emails.inbox') }}" class="text-gray-600 hover:text-gray-800">
-            <i class="fas fa-arrow-left mr-2"></i>Back to Inbox
+<div class="p-3 sm:p-6 pb-20 md:pb-6">
+    <!-- Back + Actions -->
+    <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200 overflow-x-auto">
+        <a href="{{ url_for('emails.inbox') }}" class="text-blue-600 hover:text-blue-800 flex-shrink-0 text-sm">
+            <i class="fas fa-arrow-left mr-1"></i>Back
         </a>
-        
+
         <div class="flex-1"></div>
-        
-        <a href="{{ url_for('emails.reply', email_id=email.id) }}" 
-           class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-            <i class="fas fa-reply mr-2"></i>Reply
-        </a>
-        
-        <a href="{{ url_for('emails.forward', email_id=email.id) }}" 
-           class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
-            <i class="fas fa-share mr-2"></i>Forward
-        </a>
-        
+
+        <div class="flex items-center gap-1.5 flex-shrink-0">
+            <a href="{{ url_for('emails.reply', email_id=email.id) }}"
+               class="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+                <i class="fas fa-reply mr-1"></i><span class="hidden sm:inline">Reply</span>
+            </a>
+
+            <a href="{{ url_for('emails.forward', email_id=email.id) }}"
+               class="px-3 py-1.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm">
+                <i class="fas fa-share mr-1"></i><span class="hidden sm:inline">Forward</span>
+            </a>
+
+            <!-- More actions toggle (mobile) -->
+            <button id="more-actions-btn" class="px-2 py-1.5 bg-gray-200 rounded-lg text-sm md:hidden">
+                <i class="fas fa-ellipsis-v"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Expandable actions (shown via more btn on mobile, always on desktop) -->
+    <div id="more-actions" class="hidden md:flex items-center gap-1.5 mb-4 pb-3 border-b border-gray-200 md:border-0 md:mb-0 md:pb-0">
         <form action="{{ url_for('emails.toggle_star', email_id=email.id) }}" method="post" class="inline">
-            <button type="submit" 
-                    class="px-4 py-2 {% if email.is_starred %}bg-yellow-500{% else %}bg-gray-200{% endif %} rounded-lg hover:opacity-80">
-                <i class="{% if email.is_starred %}fas{% else %}far{% endif %} fa-star mr-2"></i>
+            <button type="submit"
+                    class="px-3 py-1.5 {% if email.is_starred %}bg-yellow-500{% else %}bg-gray-200{% endif %} rounded-lg hover:opacity-80 text-sm">
+                <i class="{% if email.is_starred %}fas{% else %}far{% endif %} fa-star mr-1"></i>
                 {% if email.is_starred %}Unstar{% else %}Star{% endif %}
             </button>
         </form>
-        
+
         <form action="{{ url_for('emails.mark_read', email_id=email.id) }}" method="post" class="inline">
-            <button type="submit" class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">
-                <i class="fas fa-envelope-open mr-2"></i>Mark Read
+            <button type="submit" class="px-3 py-1.5 bg-gray-200 rounded-lg hover:bg-gray-300 text-sm">
+                <i class="fas fa-envelope-open mr-1"></i><span class="hidden sm:inline">Mark Read</span>
             </button>
         </form>
-        
-        <!-- Move to Folder -->
+
         <form action="{{ url_for('emails.move_email', email_id=email.id) }}" method="post" class="inline">
-            <select name="folder_id" onchange="this.form.submit()" 
-                    class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <select name="folder_id" onchange="this.form.submit()"
+                    class="px-2 py-1.5 border border-gray-300 rounded-lg text-sm">
                 <option value="">Move to...</option>
                 {% for folder in folders %}
                     {% if folder.id != email.folder_id %}
-                        <option value="{{ folder.id }}">{{ folder.name }}</option>
+                    <option value="{{ folder.id }}">{{ folder.name }}</option>
                     {% endif %}
                 {% endfor %}
             </select>
         </form>
-        
+
         <form action="{{ url_for('emails.delete_email', email_id=email.id) }}" method="post" class="inline"
               onsubmit="return confirm('Delete this email?')">
-            <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
-                <i class="fas fa-trash mr-2"></i>Delete
+            <button type="submit" class="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm">
+                <i class="fas fa-trash mr-1"></i>Delete
             </button>
         </form>
-        
+
         <form action="{{ url_for('emails.block_sender', email_id=email.id) }}" method="post" class="inline"
               onsubmit="return confirm('Block this sender and delete email?')">
-            <button type="submit" class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700">
-                <i class="fas fa-ban mr-2"></i>Block Sender
+            <button type="submit" class="px-3 py-1.5 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm">
+                <i class="fas fa-ban mr-1"></i><span class="hidden sm:inline">Block Sender</span>
             </button>
         </form>
-        
+
         <form action="{{ url_for('emails.block_domain', email_id=email.id) }}" method="post" class="inline"
               onsubmit="return confirm('Block entire domain and delete email?')">
-            <button type="submit" class="px-4 py-2 bg-orange-800 text-white rounded-lg hover:bg-orange-900">
-                <i class="fas fa-globe mr-2"></i>Block Domain
+            <button type="submit" class="px-3 py-1.5 bg-orange-800 text-white rounded-lg hover:bg-orange-900 text-sm">
+                <i class="fas fa-globe mr-1"></i><span class="hidden sm:inline">Block Domain</span>
             </button>
         </form>
     </div>
-    
+
     <!-- Email Header -->
-    <div class="mb-6">
-        <h1 class="text-2xl font-bold text-gray-900 mb-4">{{ email.subject or '(No subject)' }}</h1>
-        
-        <div class="flex items-start space-x-4">
-            <div class="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+    <div class="mb-4">
+        <h1 class="text-lg sm:text-2xl font-bold text-gray-900 mb-3">{{ email.subject or '(No subject)' }}</h1>
+
+        <div class="flex items-start gap-3">
+            <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                 {{ email.sender.email[0].upper() if email.sender and email.sender.email else '?' }}
             </div>
-            
-            <div class="flex-1">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <div class="font-semibold text-gray-900">
+
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between gap-2">
+                    <div class="min-w-0">
+                        <div class="font-semibold text-gray-900 text-sm truncate">
                             {{ email.sender.email if email.sender else 'Unknown' }}
                         </div>
-                        <div class="text-sm text-gray-500">
+                        <div class="text-xs text-gray-500 truncate">
                             To: {{ email.recipient.email if email.recipient else 'Unknown' }}
                         </div>
                     </div>
-                    <div class="text-sm text-gray-500">
-                        {{ email.created_at }}
+                    <div class="text-xs text-gray-500 flex-shrink-0">
+                        {{ email.created_at[:16] if email.created_at else '' }}
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    
+
     <!-- Email Body - sandboxed in iframe -->
     {% if email.body_html %}
         {% set email_content = email.body_html %}
@@ -111,44 +120,54 @@
     {% else %}
         {% set email_content = '<p style="color: #6b7280;">(No content)</p>' %}
     {% endif %}
-    
-    <iframe id="email-frame" 
-            sandbox="allow-same-origin" 
-            class="w-full border-0 bg-white rounded-lg"
-            style="min-height: 300px;"></iframe>
-    
+
+    <div class="border border-gray-200 rounded-lg overflow-hidden">
+        <iframe id="email-frame"
+                sandbox="allow-same-origin"
+                class="w-full bg-white"
+                style="min-height: 200px; border: none;"></iframe>
+    </div>
+
     <script>
     (function() {
         var iframe = document.getElementById('email-frame');
         var content = {{ email_content | tojson }};
-        
+
         var html = '<!DOCTYPE html><html><head>' +
+            '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
             '<style>' +
-            'html, body { margin: 0; padding: 16px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; }' +
+            'html, body { margin: 0; padding: 12px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; font-size: 14px; }' +
             'img { max-width: 100%; height: auto; }' +
             'pre { white-space: pre-wrap; word-wrap: break-word; }' +
+            'a { color: #2563eb; }' +
             '</style>' +
             '</head><body>' + content + '</body></html>';
-        
+
         iframe.srcdoc = html;
-        
-        iframe.onload = function() {
-            var doc = iframe.contentDocument || iframe.contentWindow.document;
-            iframe.style.height = doc.body.scrollHeight + 32 + 'px';
-        };
+
+        function resizeIframe() {
+            try {
+                var doc = iframe.contentDocument || iframe.contentWindow.document;
+                var height = doc.body.scrollHeight;
+                iframe.style.height = Math.max(height + 24, 200) + 'px';
+            } catch(e) {}
+        }
+
+        iframe.onload = resizeIframe;
+        window.addEventListener('resize', resizeIframe);
     })();
     </script>
-    
+
     <!-- Attachments -->
     {% if email.attachments %}
-    <div class="mt-8 pt-4 border-t border-gray-200">
-        <h3 class="font-semibold mb-3">Attachments</h3>
+    <div class="mt-4 pt-3 border-t border-gray-200">
+        <h3 class="font-semibold mb-2 text-sm">Attachments</h3>
         <div class="flex flex-wrap gap-2">
             {% for attachment in email.attachments %}
-            <div class="flex items-center px-3 py-2 bg-gray-100 rounded-lg">
+            <div class="flex items-center px-3 py-2 bg-gray-100 rounded-lg text-sm">
                 <i class="fas fa-paperclip mr-2 text-gray-500"></i>
                 <span>{{ attachment.filename }}</span>
-                <span class="ml-2 text-sm text-gray-500">({{ attachment.size }} bytes)</span>
+                <span class="ml-2 text-xs text-gray-500">({{ attachment.size }} bytes)</span>
             </div>
             {% endfor %}
         </div>
@@ -156,7 +175,10 @@
     {% endif %}
 </div>
 
-<style>
-    /* Email content is now sandboxed in iframe */
-</style>
+<script>
+document.getElementById('more-actions-btn')?.addEventListener('click', function() {
+    var panel = document.getElementById('more-actions');
+    panel.classList.toggle('hidden');
+});
+</script>
 {% endblock %}

@@ -3,129 +3,135 @@
 {% block title %}{% if is_search %}Search: {{ search_query }}{% else %}Inbox{% endif %} - PyPG Mail{% endblock %}
 
 {% block content %}
-<div class="p-6">
+<div class="p-3 sm:p-6 pb-20 md:pb-6">
     <!-- Header -->
-    <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold text-gray-800">
+    <div class="flex items-center justify-between mb-4">
+        <h1 class="text-lg sm:text-2xl font-bold text-gray-800 truncate">
             {% if is_search %}
-                Search results for "{{ search_query }}"
+                Search: "{{ search_query }}"
             {% else %}
                 {% if current_folder == 2 %}Sent{% elif current_folder == 3 %}Drafts{% elif current_folder == 4 %}Trash{% else %}Inbox{% endif %}
             {% endif %}
         </h1>
-        <div class="text-gray-600">
+        <div class="text-gray-600 text-xs sm:text-sm flex-shrink-0">
             {% if total > 0 %}
-                Showing {{ (page - 1) * limit + 1 }}-{{ [page * limit, total] | min }} of {{ total }}
+                {{ (page - 1) * limit + 1 }}-{{ [page * limit, total] | min }} of {{ total }}
             {% else %}
                 No emails
             {% endif %}
         </div>
     </div>
-    
+
     <!-- Bulk Actions Bar -->
     <input type="hidden" name="email_ids" id="selected-ids">
-    
-    <div id="bulk-actions" class="hidden mb-4 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 flex items-center justify-between">
-        <div class="flex items-center">
-            <span id="selected-count" class="text-sm text-gray-700 mr-4">0 selected</span>
-        </div>
-        <div class="flex items-center space-x-2">
-            <select id="bulk-folder-select" class="px-3 py-1.5 border border-gray-300 rounded text-sm">
-                <option value="">Move to...</option>
-                {% for folder in folders %}
-                <option value="{{ folder.id }}">{{ folder.name }}</option>
-                {% endfor %}
-            </select>
-            <button id="bulk-move-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded text-sm">
-                <i class="fas fa-folder mr-1"></i> Move
-            </button>
-            <button id="bulk-delete-btn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded text-sm">
-                <i class="fas fa-trash mr-1"></i> Delete
-            </button>
-            <button id="block-sender-btn" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-1.5 rounded text-sm">
-                <i class="fas fa-ban mr-1"></i> Block Sender
-            </button>
-            <button id="block-domain-btn" class="bg-orange-800 hover:bg-orange-900 text-white px-4 py-1.5 rounded text-sm">
-                <i class="fas fa-globe mr-1"></i> Block Domain
-            </button>
+
+    <div id="bulk-actions" class="hidden mb-3 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 sm:px-4 sm:py-3">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+            <span id="selected-count" class="text-sm text-gray-700">0 selected</span>
+            <div class="flex items-center gap-2 flex-wrap">
+                <select id="bulk-folder-select" class="px-2 py-1.5 border border-gray-300 rounded text-sm">
+                    <option value="">Move to...</option>
+                    {% for folder in folders %}
+                    <option value="{{ folder.id }}">{{ folder.name }}</option>
+                    {% endfor %}
+                </select>
+                <button id="bulk-move-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-sm">
+                    <i class="fas fa-folder mr-1"></i> Move
+                </button>
+                <button id="bulk-delete-btn" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded text-sm">
+                    <i class="fas fa-trash mr-1"></i> Delete
+                </button>
+                <button id="block-sender-btn" class="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1.5 rounded text-sm hidden sm:inline-flex">
+                    <i class="fas fa-ban mr-1"></i> Block Sender
+                </button>
+                <button id="block-domain-btn" class="bg-orange-800 hover:bg-orange-900 text-white px-3 py-1.5 rounded text-sm hidden sm:inline-flex">
+                    <i class="fas fa-globe mr-1"></i> Block Domain
+                </button>
+            </div>
         </div>
     </div>
-    
+
     <!-- Email List -->
-    <div class="bg-white rounded-lg shadow">
+    <div class="bg-white rounded-lg shadow overflow-hidden">
         {% if emails %}
-            <!-- Header with select all -->
-            <div class="px-4 py-3 border-b border-gray-200 bg-gray-50 flex items-center">
-                <input type="checkbox" id="select-all" class="w-4 h-4 text-blue-600 rounded mr-4">
+            <!-- Select all -->
+            <div class="px-3 py-2 border-b border-gray-200 bg-gray-50 flex items-center">
+                <input type="checkbox" id="select-all" class="w-4 h-4 text-blue-600 rounded mr-3">
                 <span class="text-sm text-gray-500">Select all</span>
             </div>
-            
-            <div class="divide-y divide-gray-200">
+
+            <div class="divide-y divide-gray-100">
                 {% for email in emails %}
-                <div class="email-row flex items-center px-4 py-3 cursor-pointer {% if not email.is_read %}email-unread{% endif %}">
+                <div class="email-row flex items-center px-3 py-3 sm:px-4 sm:py-3 cursor-pointer hover:bg-gray-50 {% if not email.is_read %}email-unread bg-blue-50/30{% endif %}">
                     <!-- Checkbox -->
-                    <input type="checkbox" name="email_select" value="{{ email.id }}" class="email-checkbox w-4 h-4 text-blue-600 rounded mr-4">
-                    
-                    <!-- Star Button -->
-                    <form action="{{ url_for('emails.toggle_star', email_id=email.id) }}" method="post" class="mr-3">
-                        <button type="submit" class="text-xl {% if email.is_starred %}text-yellow-400{% else %}text-gray-300 hover:text-gray-400{% endif %}">
+                    <input type="checkbox" name="email_select" value="{{ email.id }}" class="email-checkbox w-4 h-4 text-blue-600 rounded mr-3 flex-shrink-0">
+
+                    <!-- Star -->
+                    <form action="{{ url_for('emails.toggle_star', email_id=email.id) }}" method="post" class="mr-2 flex-shrink-0">
+                        <button type="submit" class="text-lg {% if email.is_starred %}text-yellow-400{% else %}text-gray-300 hover:text-gray-400{% endif %}">
                             <i class="{% if email.is_starred %}fas{% else %}far{% endif %} fa-star"></i>
                         </button>
                     </form>
-                    
+
                     <!-- Email Link -->
-                    <a href="{{ url_for('emails.email_detail', email_id=email.id) }}" class="flex-1 flex items-center min-w-0">
-                        <!-- Sender -->
-                        <div class="w-48 truncate text-gray-900">
-                            {% if email.sender %}
-                                {{ email.sender.email }}
-                            {% else %}
-                                Unknown
-                            {% endif %}
+                    <a href="{{ url_for('emails.email_detail', email_id=email.id) }}" class="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center">
+                        <!-- Sender & Subject (mobile: stacked) -->
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center gap-2">
+                                <span class="truncate text-gray-900 text-sm {% if not email.is_read %}font-semibold{% endif %}">
+                                    {% if email.sender %}
+                                        {{ email.sender.email }}
+                                    {% else %}
+                                        Unknown
+                                    {% endif %}
+                                </span>
+                                <span class="text-gray-400 text-xs flex-shrink-0 sm:hidden">
+                                    {{ email.created_at[:10] if email.created_at else '' }}
+                                </span>
+                            </div>
+                            <div class="truncate text-sm {% if not email.is_read %}font-semibold text-gray-900{% else %}text-gray-700{% endif %}">
+                                {{ email.subject or '(No subject)' }}
+                            </div>
+                            <div class="truncate text-xs text-gray-500 hidden sm:block">
+                                {{ email.body[:80] if email.body else '' }}
+                            </div>
                         </div>
-                        
-                        <!-- Subject and Preview -->
-                        <div class="flex-1 min-w-0 mx-4">
-                            <span class="{% if not email.is_read %}font-bold{% endif %}">{{ email.subject or '(No subject)' }}</span>
-                            <span class="text-gray-500 ml-2">-</span>
-                            <span class="text-gray-500 truncate">{{ email.body[:100] if email.body else '' }}...</span>
-                        </div>
-                        
-                        <!-- Date -->
-                        <div class="text-gray-500 text-sm whitespace-nowrap">
+
+                        <!-- Date (desktop) -->
+                        <div class="text-gray-400 text-xs whitespace-nowrap flex-shrink-0 ml-2 hidden sm:block">
                             {{ email.created_at[:10] if email.created_at else '' }}
                         </div>
                     </a>
-                    
-                    <!-- Actions -->
-                    <div class="ml-4 flex items-center space-x-2 opacity-0 hover:opacity-100 transition-opacity">
-                        <form action="{{ url_for('emails.delete_email', email_id=email.id) }}" method="post" 
+
+                    <!-- Actions (desktop hover) -->
+                    <div class="ml-2 hidden sm:flex items-center space-x-1 opacity-0 hover:opacity-100 transition-opacity">
+                        <form action="{{ url_for('emails.delete_email', email_id=email.id) }}" method="post"
                               onsubmit="return confirm('Delete this email?')">
-                            <button type="submit" class="text-gray-400 hover:text-red-600">
-                                <i class="fas fa-trash"></i>
+                            <button type="submit" class="text-gray-400 hover:text-red-600 p-1">
+                                <i class="fas fa-trash text-sm"></i>
                             </button>
                         </form>
                     </div>
                 </div>
                 {% endfor %}
             </div>
-            
+
             <!-- Pagination -->
             {% if total > limit %}
-            <div class="px-4 py-3 border-t border-gray-200 flex items-center justify-between">
+            <div class="px-3 py-3 border-t border-gray-200 flex items-center justify-between text-sm">
                 {% if page > 1 %}
-                    <a href="?{% if current_folder %}folder_id={{ current_folder }}&{% endif %}{% if is_search %}q={{ search_query }}&{% endif %}page={{ page - 1 }}" 
+                    <a href="?{% if current_folder %}folder_id={{ current_folder }}&{% endif %}{% if is_search %}q={{ search_query }}&{% endif %}page={{ page - 1 }}"
                        class="text-blue-600 hover:text-blue-800">
-                        <i class="fas fa-chevron-left mr-1"></i> Previous
+                        <i class="fas fa-chevron-left mr-1"></i> Prev
                     </a>
                 {% else %}
                     <span></span>
                 {% endif %}
-                
-                <span class="text-gray-600">Page {{ page }} of {{ ((total - 1) / limit) | int + 1 }}</span>
-                
+
+                <span class="text-gray-600">{{ page }} / {{ ((total - 1) / limit) | int + 1 }}</span>
+
                 {% if page * limit < total %}
-                    <a href="?{% if current_folder %}folder_id={{ current_folder }}&{% endif %}{% if is_search %}q={{ search_query }}&{% endif %}page={{ page + 1 }}" 
+                    <a href="?{% if current_folder %}folder_id={{ current_folder }}&{% endif %}{% if is_search %}q={{ search_query }}&{% endif %}page={{ page + 1 }}"
                        class="text-blue-600 hover:text-blue-800">
                         Next <i class="fas fa-chevron-right ml-1"></i>
                     </a>
@@ -136,8 +142,8 @@
             {% endif %}
         {% else %}
             <div class="p-8 text-center text-gray-500">
-                <i class="fas fa-inbox text-6xl mb-4 text-gray-300"></i>
-                <p class="text-lg">{% if is_search %}No emails match your search.{% else %}Your inbox is empty.{% endif %}</p>
+                <i class="fas fa-inbox text-4xl sm:text-6xl mb-4 text-gray-300"></i>
+                <p class="text-base sm:text-lg">{% if is_search %}No emails match your search.{% else %}Your inbox is empty.{% endif %}</p>
             </div>
         {% endif %}
     </div>
@@ -153,7 +159,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const bulkDeleteBtn = document.getElementById('bulk-delete-btn');
     const blockSenderBtn = document.getElementById('block-sender-btn');
     const blockDomainBtn = document.getElementById('block-domain-btn');
-    
+
     function updateBulkActions() {
         const selected = Array.from(checkboxes).filter(c => c.checked);
         if (selected.length > 0) {
@@ -165,12 +171,12 @@ document.addEventListener('DOMContentLoaded', function() {
             selectedIds.value = '';
         }
     }
-    
+
     function performBulkAction(action, confirmMsg) {
         const selected = Array.from(checkboxes).filter(c => c.checked);
         if (selected.length === 0) return;
         if (!confirm(confirmMsg + selected.length + ' email(s)?')) return;
-        
+
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = action;
@@ -178,40 +184,37 @@ document.addEventListener('DOMContentLoaded', function() {
         document.body.appendChild(form);
         form.submit();
     }
-    
+
     selectAll.addEventListener('change', function() {
         checkboxes.forEach(cb => cb.checked = this.checked);
         updateBulkActions();
     });
-    
+
     checkboxes.forEach(cb => {
         cb.addEventListener('change', updateBulkActions);
     });
-    
+
     bulkDeleteBtn.addEventListener('click', function() {
         performBulkAction("{{ url_for('emails.bulk_delete') }}", 'Delete ');
     });
-    
-    blockSenderBtn.addEventListener('click', function() {
-        performBulkAction("{{ url_for('emails.bulk_block_sender') }}", 'Block sender for ');
-    });
-    
-    blockDomainBtn.addEventListener('click', function() {
-        performBulkAction("{{ url_for('emails.bulk_block_domain') }}", 'Block domain for ');
-    });
-    
+
+    if (blockSenderBtn) {
+        blockSenderBtn.addEventListener('click', function() {
+            performBulkAction("{{ url_for('emails.bulk_block_sender') }}", 'Block sender for ');
+        });
+    }
+    if (blockDomainBtn) {
+        blockDomainBtn.addEventListener('click', function() {
+            performBulkAction("{{ url_for('emails.bulk_block_domain') }}", 'Block domain for ');
+        });
+    }
+
     document.getElementById('bulk-move-btn').addEventListener('click', function() {
         const selected = Array.from(checkboxes).filter(c => c.checked);
-        if (selected.length === 0) {
-            alert('Please select emails to move');
-            return;
-        }
+        if (selected.length === 0) { alert('Please select emails to move'); return; }
         const folderId = document.getElementById('bulk-folder-select').value;
-        if (!folderId) {
-            alert('Please select a folder');
-            return;
-        }
-        
+        if (!folderId) { alert('Please select a folder'); return; }
+
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = "{{ url_for('emails.bulk_move') }}";
