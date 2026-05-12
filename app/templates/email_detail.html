@@ -100,7 +100,7 @@
                         </div>
                     </div>
                     <div class="text-xs text-gray-500 flex-shrink-0">
-                        {{ email.created_at[:16] if email.created_at else '' }}
+                        {{ email.created_at|datetime }}
                     </div>
                 </div>
             </div>
@@ -108,22 +108,11 @@
     </div>
 
     <!-- Email Body - sandboxed in iframe -->
-    {% if email.body_html %}
-        {% set email_content = email.body_html %}
-    {% elif email.body %}
-        {% set first_char = (email.body.strip()[:1] if email.body.strip() else '') %}
-        {% if first_char == '<' %}
-            {% set email_content = email.body %}
-        {% else %}
-            {% set email_content = '<pre style="white-space: pre-wrap; font-family: inherit; margin: 0;">' + (email.body | e) + '</pre>' %}
-        {% endif %}
-    {% else %}
-        {% set email_content = '<p style="color: #6b7280;">(No content)</p>' %}
-    {% endif %}
+    {% set email_content = email.html if email.html else email.body if email.body else '<p style="color: #6b7280;">(No content)</p>' %}
 
     <div class="border border-gray-200 rounded-lg overflow-hidden">
         <iframe id="email-frame"
-                sandbox="allow-same-origin"
+                sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"
                 class="w-full bg-white"
                 style="min-height: 200px; border: none;"></iframe>
     </div>
@@ -131,17 +120,43 @@
     <script>
     (function() {
         var iframe = document.getElementById('email-frame');
-        var content = {{ email_content | tojson }};
+        var rawContent = {{ email_content | tojson }};
+
+        // Strip email headers from plain text if present (From:\nTo:\nSubject:\n etc.)
+        var content = rawContent.trim();
+        var headerEnd = content.indexOf('\n\n');
+        if (headerEnd > 0 && headerEnd < 500) {
+            var beforeBlank = content.substring(0, headerEnd);
+            var headerLines = beforeBlank.split('\n');
+            var headerCount = 0;
+            for (var i = 0; i < headerLines.length; i++) {
+                if (/^[A-Za-z][-A-Za-z0-9]*:/.test(headerLines[i])) {
+                    headerCount++;
+                }
+            }
+            if (headerCount >= 3) {
+                content = content.substring(headerEnd + 2);
+            }
+        }
+
+        var isHtml = content.trim().charAt(0) === '<' && (content.includes('</') || content.includes('/>'));
+
+        var displayContent;
+        if (isHtml) {
+            displayContent = content;
+        } else {
+            var escaped = content.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+            displayContent = '<pre style="white-space: pre-wrap; word-wrap: break-word; font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; line-height: 1.6; font-size: 14px; margin: 0; padding: 12px;">' + escaped + '</pre>';
+        }
 
         var html = '<!DOCTYPE html><html><head>' +
             '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
             '<style>' +
-            'html, body { margin: 0; padding: 12px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; font-size: 14px; }' +
+            'html, body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; font-size: 14px; }' +
             'img { max-width: 100%; height: auto; }' +
-            'pre { white-space: pre-wrap; word-wrap: break-word; }' +
             'a { color: #2563eb; }' +
             '</style>' +
-            '</head><body>' + content + '</body></html>';
+            '</head><body>' + displayContent + '</body></html>';
 
         iframe.srcdoc = html;
 

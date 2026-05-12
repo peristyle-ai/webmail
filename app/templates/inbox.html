@@ -86,7 +86,7 @@
                                     {% endif %}
                                 </span>
                                 <span class="text-gray-400 text-xs flex-shrink-0 sm:hidden">
-                                    {{ email.created_at[:10] if email.created_at else '' }}
+                                    {{ email.created_at|datetime }}
                                 </span>
                             </div>
                             <div class="truncate text-sm {% if not email.is_read %}font-semibold text-gray-900{% else %}text-gray-700{% endif %}">
@@ -99,7 +99,7 @@
 
                         <!-- Date (desktop) -->
                         <div class="text-gray-400 text-xs whitespace-nowrap flex-shrink-0 ml-2 hidden sm:block">
-                            {{ email.created_at[:10] if email.created_at else '' }}
+                            {{ email.created_at|datetime }}
                         </div>
                     </a>
 

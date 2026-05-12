@@ -1,10 +1,36 @@
 import os
-from flask import Flask, send_from_directory
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
+from flask import Flask, send_from_directory, session
 from config import Config
+
+def format_datetime(value):
+    if not value:
+        return ''
+    try:
+        for fmt in ('%a, %d %b %Y %H:%M:%S GMT', '%Y-%m-%dT%H:%M:%S%z', '%Y-%m-%d %H:%M:%S'):
+            try:
+                dt = datetime.strptime(value.strip(), fmt)
+                break
+            except ValueError:
+                continue
+        else:
+            return value
+    except Exception:
+        return value
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    tz_name = session.get('user', {}).get('timezone', 'Australia/Sydney')
+    try:
+        dt = dt.astimezone(ZoneInfo(tz_name))
+    except Exception:
+        dt = dt.astimezone(ZoneInfo('Australia/Sydney'))
+    return dt.strftime('%b %d, %Y %I:%M %p')
 
 def create_app():
     app = Flask(__name__, template_folder='templates', static_folder='static')
     app.config.from_object(Config)
+    app.jinja_env.filters['datetime'] = format_datetime
 
     # Initialize database
     from app.db import init_db
