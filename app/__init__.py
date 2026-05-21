@@ -32,6 +32,10 @@ def create_app():
     app.config.from_object(Config)
     app.jinja_env.filters['datetime'] = format_datetime
 
+    @app.context_processor
+    def inject_globals():
+        return dict(folders=[], current_folder=session.get('current_folder', 'Inbox'))
+
     # Initialize database
     from app.db import init_db
     init_db()
@@ -39,8 +43,9 @@ def create_app():
     # Serve service worker at root for PWA scope
     @app.route('/sw.js')
     def service_worker():
-        return send_from_directory(os.path.join(app.root_path, 'static'), 'sw.js',
-                                  mimetype='application/javascript')
+        return send_from_directory(
+            os.path.join(app.root_path, 'static'), 'sw.js',
+            mimetype='application/javascript')
 
     from app.routes.auth import auth_bp
     from app.routes.emails import emails_bp

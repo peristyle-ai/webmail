@@ -19,7 +19,6 @@ def login():
             session['token'] = token
             session['user'] = user
             session.permanent = True
-            flash('Login successful!', 'success')
             return redirect(url_for('emails.inbox'))
         except AuthenticationError:
             flash('Invalid email or password', 'error')

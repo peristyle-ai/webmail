@@ -48,7 +48,7 @@
                     </div>
                     
                     <div class="flex items-center space-x-2">
-                        <a href="{{ url_for('emails.inbox', folder_id=folder.id) }}" 
+                        <a href="{{ url_for('emails.inbox', folder=folder.name) }}" 
                            class="px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg">
                             View
                         </a>

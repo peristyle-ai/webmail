@@ -174,15 +174,25 @@
     </script>
 
     <!-- Attachments -->
-    {% if email.attachments %}
+    {% if attachments %}
     <div class="mt-4 pt-3 border-t border-gray-200">
         <h3 class="font-semibold mb-2 text-sm">Attachments</h3>
         <div class="flex flex-wrap gap-2">
-            {% for attachment in email.attachments %}
+            {% for attachment in attachments %}
             <div class="flex items-center px-3 py-2 bg-gray-100 rounded-lg text-sm">
                 <i class="fas fa-paperclip mr-2 text-gray-500"></i>
-                <span>{{ attachment.filename }}</span>
-                <span class="ml-2 text-xs text-gray-500">({{ attachment.size }} bytes)</span>
+                {% if attachment.file_size < 1024 %}
+                    {% set size_str = attachment.file_size|string + ' B' %}
+                {% elif attachment.file_size < 1048576 %}
+                    {% set size_str = (attachment.file_size / 1024)|round|int|string + ' KB' %}
+                {% else %}
+                    {% set size_str = (attachment.file_size / 1048576)|round(1)|string + ' MB' %}
+                {% endif %}
+                <a href="{{ url_for('emails.download_attachment', attachment_id=attachment.id) }}"
+                   class="text-blue-600 hover:text-blue-800 hover:underline">
+                    {{ attachment.file_name }}
+                </a>
+                <span class="ml-2 text-xs text-gray-500">({{ size_str }})</span>
             </div>
             {% endfor %}
         </div>

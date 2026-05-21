@@ -55,16 +55,20 @@ class MailServerAPI:
             raise APIError(f"Login failed: {response.status_code}")
     
     # Emails
-    def get_emails(self, token, folder_id=None, page=1, limit=20):
-        """Get list of emails"""
+    def get_emails(self, token, folder=None, page=1, limit=20):
+        """Get list of emails, optionally filtered by folder name"""
         params = {'page': page, 'limit': limit}
-        if folder_id:
-            params['folder_id'] = folder_id
+        if folder:
+            params['folder'] = folder
         return self._make_request('GET', '/api/emails', token, params=params)
     
     def get_email(self, token, email_id):
         """Get single email by ID"""
         return self._make_request('GET', f'/api/emails/{email_id}', token)
+    
+    def get_attachments(self, token, email_id):
+        """Get attachments for an email"""
+        return self._make_request('GET', f'/api/emails/{email_id}/attachments', token)
     
     def send_email(self, token, to, subject, body, cc=None, bcc=None):
         """Send a new email"""
@@ -170,7 +174,6 @@ def require_auth(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'token' not in session:
-            flash('Please log in to access this page', 'warning')
             return redirect(url_for('auth.login'))
         return f(*args, **kwargs)
     return decorated_function

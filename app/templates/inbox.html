@@ -10,7 +10,7 @@
             {% if is_search %}
                 Search: "{{ search_query }}"
             {% else %}
-                {% if current_folder == 2 %}Sent{% elif current_folder == 3 %}Drafts{% elif current_folder == 4 %}Trash{% else %}Inbox{% endif %}
+                {% if current_folder == 'Sent' %}Sent{% elif current_folder == 'Drafts' %}Drafts{% elif current_folder == 'Trash' %}Trash{% else %}Inbox{% endif %}
             {% endif %}
         </h1>
         <div class="text-gray-600 text-xs sm:text-sm flex-shrink-0">
@@ -120,7 +120,7 @@
             {% if total > limit %}
             <div class="px-3 py-3 border-t border-gray-200 flex items-center justify-between text-sm">
                 {% if page > 1 %}
-                    <a href="?{% if current_folder %}folder_id={{ current_folder }}&{% endif %}{% if is_search %}q={{ search_query }}&{% endif %}page={{ page - 1 }}"
+                    <a href="?{% if current_folder %}folder={{ current_folder }}&{% endif %}{% if is_search %}q={{ search_query }}&{% endif %}page={{ page - 1 }}"
                        class="text-blue-600 hover:text-blue-800">
                         <i class="fas fa-chevron-left mr-1"></i> Prev
                     </a>
@@ -131,7 +131,7 @@
                 <span class="text-gray-600">{{ page }} / {{ ((total - 1) / limit) | int + 1 }}</span>
 
                 {% if page * limit < total %}
-                    <a href="?{% if current_folder %}folder_id={{ current_folder }}&{% endif %}{% if is_search %}q={{ search_query }}&{% endif %}page={{ page + 1 }}"
+                    <a href="?{% if current_folder %}folder={{ current_folder }}&{% endif %}{% if is_search %}q={{ search_query }}&{% endif %}page={{ page + 1 }}"
                        class="text-blue-600 hover:text-blue-800">
                         Next <i class="fas fa-chevron-right ml-1"></i>
                     </a>

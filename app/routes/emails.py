@@ -162,63 +162,45 @@ def index():
 @require_auth
 def inbox():
     try:
-        folder_id = request.args.get('folder_id', type=int)
+        folder = request.args.get('folder')
         page = request.args.get('page', 1, type=int)
         limit = 20
         
-        # Get folders first to find Inbox ID if not specified
         folders_data = api.get_folders(session['token'])
-        if isinstance(folders_data, list):
-            folders_list = folders_data
-        else:
+        if isinstance(folders_data, dict):
             folders_list = folders_data.get('folders', [])
+        else:
+            folders_list = folders_data
         
-        # Default to Inbox folder if not specified
-        if folder_id is None:
-            inbox_folder = next((f for f in folders_list if f.get('name', '').lower() == 'inbox'), None)
-            if inbox_folder:
-                folder_id = inbox_folder.get('id')
+        if not folder:
+            folder = 'Inbox'
         
-        # Fetch all emails (API doesn't support pagination properly)
-        # Use a large limit to get all emails, then do client-side pagination
-        emails_data = api.get_emails(session['token'], folder_id=folder_id, page=1, limit=1000)
+        session['current_folder'] = folder
         
-        # Handle both list and dict responses
+        emails_data = api.get_emails(session['token'], folder=folder, page=1, limit=1000)
+        
         if isinstance(emails_data, list):
             all_emails = emails_data
         else:
             all_emails = emails_data.get('emails', [])
         
-        # Client-side filter by folder (workaround for API not filtering)
-        if folder_id:
-            all_emails = [e for e in all_emails if e.get('folder_id') == folder_id]
-        
-        # Client-side pagination
         total_emails = len(all_emails)
         start_idx = (page - 1) * limit
         end_idx = start_idx + limit
         emails_list = all_emails[start_idx:end_idx]
         
-        # Handle folders response
-        if isinstance(folders_data, list):
-            folders_list = folders_data
-        else:
-            folders_list = folders_data.get('folders', [])
-        
-        # Enrich emails with sender info from headers
         for email in emails_list:
             if not email.get('sender') and email.get('headers'):
                 sender = extract_sender_from_headers(email['headers'])
                 if sender:
                     email['sender'] = sender
         
-        # Get unread count
         unread_count = sum(1 for e in emails_list if not e.get('is_read'))
         
         return render_template('inbox.html', 
                              emails=emails_list,
                              folders=folders_list,
-                             current_folder=folder_id,
+                             current_folder=folder,
                              page=page,
                              total=total_emails,
                              limit=limit,
@@ -229,7 +211,7 @@ def inbox():
         return redirect(url_for('auth.login'))
     except APIError as e:
         flash(str(e), 'error')
-        return render_template('inbox.html', emails=[], folders=[], current_folder=None, page=1, total=0, limit=20, unread_count=0)
+        return redirect(url_for('emails.inbox'))
 
 @emails_bp.route('/emails/<int:email_id>')
 @require_auth
@@ -238,40 +220,42 @@ def email_detail(email_id):
         email = api.get_email(session['token'], email_id)
         folders_data = api.get_folders(session['token'])
         
-        # Handle folders response
         if isinstance(folders_data, list):
             folders_list = folders_data
         else:
             folders_list = folders_data.get('folders', [])
         
-        # Enrich email with sender info from headers if missing
         if email and not email.get('sender') and email.get('headers'):
             sender = extract_sender_from_headers(email['headers'])
             if sender:
                 email['sender'] = sender
         
-        # Enrich email with recipient info from headers if missing
         if email and not email.get('recipient') and email.get('headers'):
             recipient = extract_recipient_from_headers(email['headers'])
             if recipient:
                 email['recipient'] = recipient
         
-        # Use HTML from API response (body_html field maps to 'html' in response)
         html_content = email.get('html') if email else None
-        
-        # Fallback to MIME parsing if no HTML from API
+
         if not html_content and email and email.get('body'):
             _, html_body = parse_mime_body(email.get('body', ''))
             html_content = html_body
-        
-        # Don't sanitize - preserve full styling for email rendering
-        # Security: emails are external content, browsers handle safely
+
         if html_content:
             email['body_html'] = html_content
         
+        attachments = []
+        try:
+            attachments_data = api.get_attachments(session['token'], email_id)
+            if isinstance(attachments_data, list):
+                attachments = attachments_data
+        except APIError:
+            pass
+        
         return render_template('email_detail.html', 
                              email=email or {},
-                             folders=folders_list)
+                             folders=folders_list,
+                             attachments=attachments)
     except AuthenticationError:
         session.clear()
         flash('Session expired. Please log in again.', 'warning')
@@ -279,6 +263,45 @@ def email_detail(email_id):
     except APIError as e:
         flash(str(e), 'error')
         return redirect(url_for('emails.inbox'))
+
+@emails_bp.route('/attachments/<int:attachment_id>')
+@require_auth
+def download_attachment(attachment_id):
+    try:
+        import requests as req_lib
+        headers = {'Authorization': f'Bearer {session["token"]}'}
+        response = req_lib.get(
+            f'{api.base_url}/api/attachments/{attachment_id}',
+            headers=headers,
+            stream=True
+        )
+        if response.status_code == 200:
+            content_disp = response.headers.get('Content-Disposition', '')
+            if 'filename="' in content_disp:
+                start = content_disp.index('filename="') + len('filename="')
+                end = content_disp.index('"', start)
+                filename = content_disp[start:end]
+            elif 'filename=' in content_disp:
+                start = content_disp.index('filename=') + len('filename=')
+                rest = content_disp[start:]
+                filename = rest.split(';')[0].strip().strip('"\'')
+            content_type = response.headers.get('Content-Type', 'application/octet-stream')
+            from flask import Response
+            from urllib.parse import quote
+            encoded_filename = quote(filename)
+            return Response(
+                response.iter_content(chunk_size=8192),
+                content_type=content_type,
+                headers={
+                    'Content-Disposition': f"attachment; filename=\"{filename}\"; filename*=UTF-8''{encoded_filename}"
+                }
+            )
+        else:
+            flash('Attachment not available for download', 'error')
+            return redirect(request.referrer or url_for('emails.inbox'))
+    except Exception as e:
+        flash(f'Error downloading attachment: {str(e)}', 'error')
+        return redirect(request.referrer or url_for('emails.inbox'))
 
 @emails_bp.route('/compose', methods=['GET', 'POST'])
 @require_auth

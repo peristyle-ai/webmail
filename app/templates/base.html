@@ -120,13 +120,8 @@
 
             <!-- Navigation -->
             <nav class="flex-1 px-2 overflow-y-auto">
-                {% set inbox_folder = folders | selectattr('name', 'equalto', 'Inbox') | first %}
-                {% set sent_folder = folders | selectattr('name', 'equalto', 'Sent') | first %}
-                {% set drafts_folder = folders | selectattr('name', 'equalto', 'Drafts') | first %}
-                {% set trash_folder = folders | selectattr('name', 'equalto', 'Trash') | first %}
-
-                <a href="{{ url_for('emails.inbox', folder_id=inbox_folder.id) if inbox_folder else url_for('emails.inbox') }}"
-                   class="sidebar-link flex items-center px-3 py-2.5 rounded-lg mb-0.5 text-sm {% if request.endpoint == 'emails.inbox' and (not current_folder or (inbox_folder and current_folder == inbox_folder.id)) %}active{% endif %}">
+                <a href="{{ url_for('emails.inbox', folder='Inbox') }}"
+                   class="sidebar-link flex items-center px-3 py-2.5 rounded-lg mb-0.5 text-sm {% if request.endpoint == 'emails.inbox' and current_folder == 'Inbox' %}active{% endif %}">
                     <i class="fas fa-inbox w-5 text-center mr-2"></i>
                     <span class="flex-1">Inbox</span>
                     {% if unread_count %}
@@ -134,21 +129,17 @@
                     {% endif %}
                 </a>
 
-                {% if sent_folder %}
-                <a href="{{ url_for('emails.inbox', folder_id=sent_folder.id) }}"
-                   class="sidebar-link flex items-center px-3 py-2.5 rounded-lg mb-0.5 text-sm {% if current_folder == sent_folder.id %}active{% endif %}">
+                <a href="{{ url_for('emails.inbox', folder='Sent') }}"
+                   class="sidebar-link flex items-center px-3 py-2.5 rounded-lg mb-0.5 text-sm {% if current_folder == 'Sent' %}active{% endif %}">
                     <i class="fas fa-paper-plane w-5 text-center mr-2"></i>
                     <span>Sent</span>
                 </a>
-                {% endif %}
 
-                {% if drafts_folder %}
-                <a href="{{ url_for('emails.inbox', folder_id=drafts_folder.id) }}"
-                   class="sidebar-link flex items-center px-3 py-2.5 rounded-lg mb-0.5 text-sm {% if current_folder == drafts_folder.id %}active{% endif %}">
+                <a href="{{ url_for('emails.inbox', folder='Drafts') }}"
+                   class="sidebar-link flex items-center px-3 py-2.5 rounded-lg mb-0.5 text-sm {% if current_folder == 'Drafts' %}active{% endif %}">
                     <i class="fas fa-file w-5 text-center mr-2"></i>
                     <span>Drafts</span>
                 </a>
-                {% endif %}
 
                 <a href="{{ url_for('emails.inbox', flag='starred') }}"
                    class="sidebar-link flex items-center px-3 py-2.5 rounded-lg mb-0.5 text-sm">
@@ -156,13 +147,11 @@
                     <span>Starred</span>
                 </a>
 
-                {% if trash_folder %}
-                <a href="{{ url_for('emails.inbox', folder_id=trash_folder.id) }}"
-                   class="sidebar-link flex items-center px-3 py-2.5 rounded-lg mb-0.5 text-sm {% if current_folder == trash_folder.id %}active{% endif %}">
+                <a href="{{ url_for('emails.inbox', folder='Trash') }}"
+                   class="sidebar-link flex items-center px-3 py-2.5 rounded-lg mb-0.5 text-sm {% if current_folder == 'Trash' %}active{% endif %}">
                     <i class="fas fa-trash w-5 text-center mr-2"></i>
                     <span>Trash</span>
                 </a>
-                {% endif %}
 
                 <hr class="my-2 border-gray-200">
 
@@ -173,8 +162,8 @@
 
                 {% for folder in folders %}
                     {% if folder.name not in ['Inbox', 'Sent', 'Drafts', 'Trash'] %}
-                    <a href="{{ url_for('emails.inbox', folder_id=folder.id) }}"
-                       class="sidebar-link flex items-center px-3 py-2.5 rounded-lg mb-0.5 text-sm {% if current_folder == folder.id %}active{% endif %}">
+                    <a href="{{ url_for('emails.inbox', folder=folder.name) }}"
+                       class="sidebar-link flex items-center px-3 py-2.5 rounded-lg mb-0.5 text-sm {% if current_folder == folder.name %}active{% endif %}">
                         <i class="fas fa-folder w-5 text-center mr-2"></i>
                         <span>{{ folder.name }}</span>
                     </a>
@@ -224,8 +213,8 @@
     <!-- Mobile bottom nav (shows on small screens) -->
     {% if session.user %}
     <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex md:hidden z-20 safe-area-bottom">
-        <a href="{{ url_for('emails.inbox', folder_id=inbox_folder.id) if inbox_folder else url_for('emails.inbox') }}"
-           class="flex-1 flex flex-col items-center py-2 text-xs {% if request.endpoint == 'emails.inbox' and (not current_folder or (inbox_folder and current_folder == inbox_folder.id)) %}text-blue-600{% else %}text-gray-500{% endif %}">
+        <a href="{{ url_for('emails.inbox', folder='Inbox') }}"
+           class="flex-1 flex flex-col items-center py-2 text-xs {% if request.endpoint == 'emails.inbox' and current_folder == 'Inbox' %}text-blue-600{% else %}text-gray-500{% endif %}">
             <i class="fas fa-inbox text-lg mb-0.5"></i>
             <span>Inbox</span>
         </a>
@@ -239,13 +228,11 @@
             <i class="fas fa-plus-circle text-2xl mb-0.5"></i>
             <span>Compose</span>
         </a>
-        {% if sent_folder %}
-        <a href="{{ url_for('emails.inbox', folder_id=sent_folder.id) }}"
-           class="flex-1 flex flex-col items-center py-2 text-xs {% if current_folder == sent_folder.id %}text-blue-600{% else %}text-gray-500{% endif %}">
+        <a href="{{ url_for('emails.inbox', folder='Sent') }}"
+           class="flex-1 flex flex-col items-center py-2 text-xs {% if current_folder == 'Sent' %}text-blue-600{% else %}text-gray-500{% endif %}">
             <i class="fas fa-paper-plane text-lg mb-0.5"></i>
             <span>Sent</span>
         </a>
-        {% endif %}
         <button id="mobile-menu-btn" class="flex-1 flex flex-col items-center py-2 text-xs text-gray-500">
             <i class="fas fa-bars text-lg mb-0.5"></i>
             <span>More</span>
