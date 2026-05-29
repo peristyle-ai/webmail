@@ -13,7 +13,7 @@
     </div>
 
     <!-- Compose Form -->
-    <form method="post" action="{{ url_for('emails.compose') }}" class="space-y-4">
+    <form method="post" action="{{ url_for('emails.compose') }}" enctype="multipart/form-data" class="space-y-4">
         <div>
             <label for="to" class="block text-sm font-medium text-dark-muted mb-1">To</label>
             <input type="email" id="to" name="to" required autocomplete="email"
@@ -33,6 +33,19 @@
             <textarea id="body" name="body" rows="12"
                       class="w-full px-4 py-3 bg-dark-card border border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-accent text-dark-text placeholder-dark-muted text-base"
                       placeholder="Write your message here...">{{ body }}</textarea>
+        </div>
+
+        <div>
+            <label for="attachments" class="block text-sm font-medium text-dark-muted mb-1">
+                <i class="fas fa-paperclip mr-1"></i>Attachments
+            </label>
+            <input type="file" id="attachments" name="attachments" multiple
+                   accept=".txt,.pdf,.png,.jpg,.jpeg,.gif,.doc,.docx,.zip"
+                   class="w-full text-sm text-dark-muted
+                          file:bg-dark-card file:border file:border-dark-border file:rounded-lg
+                          file:px-3 file:py-2 file:mr-3 file:text-dark-text
+                          hover:file:bg-dark-hover file:cursor-pointer file:transition">
+            <p class="text-xs text-dark-muted mt-1">Max 10MB per file. Allowed: txt, pdf, png, jpg, gif, doc, docx, zip</p>
         </div>
 
         <div class="flex items-center justify-between pt-2">

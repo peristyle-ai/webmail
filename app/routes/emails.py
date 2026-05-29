@@ -310,13 +310,24 @@ def compose():
         to = request.form.get('to', '').strip()
         subject = request.form.get('subject', '').strip()
         body = request.form.get('body', '').strip()
-        
+        files = request.files.getlist('attachments')
+
         if not to or not subject:
             flash('To and Subject are required', 'error')
             return render_template('compose.html', to=to, subject=subject, body=body)
-        
+
         try:
             result = api.send_email(session['token'], to, subject, body)
+            email_id = result.get('id') if result else None
+
+            if email_id and files:
+                for f in files:
+                    if f and f.filename:
+                        try:
+                            api.upload_attachment(session['token'], email_id, f)
+                        except Exception:
+                            pass
+
             flash('Email sent successfully!', 'success')
             return redirect(url_for('emails.inbox'))
         except AuthenticationError:
@@ -326,11 +337,11 @@ def compose():
         except APIError as e:
             flash(str(e), 'error')
             return render_template('compose.html', to=to, subject=subject, body=body)
-    
+
     to = request.args.get('to', '')
     subject = request.args.get('subject', '')
     body = request.args.get('body', '')
-    
+
     return render_template('compose.html', to=to, subject=subject, body=body)
 
 def add_to_blocklist(email_address=None, domain=None):

@@ -79,6 +79,17 @@ class MailServerAPI:
             data['bcc'] = bcc
         return self._make_request('POST', '/api/emails', token, json=data)
     
+    def upload_attachment(self, token, email_id, file_storage):
+        """Upload a file attachment to an email"""
+        headers = {'Authorization': f'Bearer {token}'}
+        files = {'file': (file_storage.filename, file_storage.stream, file_storage.content_type)}
+        url = f'{self.base_url}/api/emails/{email_id}/attachments'
+        response = requests.post(url, headers=headers, files=files)
+        if response.status_code == 401:
+            raise AuthenticationError("Invalid or expired token")
+        response.raise_for_status()
+        return response.json()
+    
     def mark_read(self, token, email_id):
         """Mark email as read"""
         return self._make_request('POST', f'/api/emails/{email_id}/read', token)
