@@ -6,14 +6,14 @@
 <div class="p-3 sm:p-6 pb-20 md:pb-6">
     <!-- Header -->
     <div class="flex items-center justify-between mb-4">
-        <h1 class="text-lg sm:text-2xl font-bold text-gray-800 truncate">
+        <h1 class="text-lg sm:text-2xl font-bold text-dark-text truncate">
             {% if is_search %}
                 Search: "{{ search_query }}"
             {% else %}
                 {% if current_folder == 'Sent' %}Sent{% elif current_folder == 'Drafts' %}Drafts{% elif current_folder == 'Trash' %}Trash{% else %}Inbox{% endif %}
             {% endif %}
         </h1>
-        <div class="text-gray-600 text-xs sm:text-sm flex-shrink-0">
+        <div class="text-dark-muted text-xs sm:text-sm flex-shrink-0">
             {% if total > 0 %}
                 {{ (page - 1) * limit + 1 }}-{{ [page * limit, total] | min }} of {{ total }}
             {% else %}
@@ -25,17 +25,17 @@
     <!-- Bulk Actions Bar -->
     <input type="hidden" name="email_ids" id="selected-ids">
 
-    <div id="bulk-actions" class="hidden mb-3 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 sm:px-4 sm:py-3">
+    <div id="bulk-actions" class="hidden mb-3 bg-dark-accent/20 border border-dark-accent/30 rounded-lg px-3 py-2 sm:px-4 sm:py-3">
         <div class="flex items-center justify-between flex-wrap gap-2">
-            <span id="selected-count" class="text-sm text-gray-700">0 selected</span>
+            <span id="selected-count" class="text-sm text-dark-text">0 selected</span>
             <div class="flex items-center gap-2 flex-wrap">
-                <select id="bulk-folder-select" class="px-2 py-1.5 border border-gray-300 rounded text-sm">
+                <select id="bulk-folder-select" class="px-2 py-1.5 bg-dark-card border border-dark-border rounded text-sm text-dark-text">
                     <option value="">Move to...</option>
                     {% for folder in folders %}
                     <option value="{{ folder.id }}">{{ folder.name }}</option>
                     {% endfor %}
                 </select>
-                <button id="bulk-move-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-sm">
+                <button id="bulk-move-btn" class="bg-dark-accent hover:bg-dark-accentHover text-white px-3 py-1.5 rounded text-sm">
                     <i class="fas fa-folder mr-1"></i> Move
                 </button>
                 <button id="bulk-delete-btn" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded text-sm">
@@ -52,23 +52,23 @@
     </div>
 
     <!-- Email List -->
-    <div class="bg-white rounded-lg shadow overflow-hidden">
+    <div class="bg-dark-card border border-dark-border rounded-lg overflow-hidden">
         {% if emails %}
             <!-- Select all -->
-            <div class="px-3 py-2 border-b border-gray-200 bg-gray-50 flex items-center">
-                <input type="checkbox" id="select-all" class="w-4 h-4 text-blue-600 rounded mr-3">
-                <span class="text-sm text-gray-500">Select all</span>
+            <div class="px-3 py-2 border-b border-dark-border bg-dark-hover/50 flex items-center">
+                <input type="checkbox" id="select-all" class="w-4 h-4 text-dark-accent rounded mr-3 bg-dark-bg border-dark-border">
+                <span class="text-sm text-dark-muted">Select all</span>
             </div>
 
-            <div class="divide-y divide-gray-100">
+            <div class="divide-y divide-dark-border">
                 {% for email in emails %}
-                <div class="email-row flex items-center px-3 py-3 sm:px-4 sm:py-3 cursor-pointer hover:bg-gray-50 {% if not email.is_read %}email-unread bg-blue-50/30{% endif %}">
+                <div class="email-row flex items-center px-3 py-3 sm:px-4 sm:py-3 cursor-pointer {% if not email.is_read %}email-unread bg-dark-accent/5{% endif %}">
                     <!-- Checkbox -->
-                    <input type="checkbox" name="email_select" value="{{ email.id }}" class="email-checkbox w-4 h-4 text-blue-600 rounded mr-3 flex-shrink-0">
+                    <input type="checkbox" name="email_select" value="{{ email.id }}" class="email-checkbox w-4 h-4 text-dark-accent rounded mr-3 flex-shrink-0 bg-dark-bg border-dark-border">
 
                     <!-- Star -->
                     <form action="{{ url_for('emails.toggle_star', email_id=email.id) }}" method="post" class="mr-2 flex-shrink-0">
-                        <button type="submit" class="text-lg {% if email.is_starred %}text-yellow-400{% else %}text-gray-300 hover:text-gray-400{% endif %}">
+                        <button type="submit" class="text-lg {% if email.is_starred %}text-yellow-400{% else %}text-dark-muted hover:text-dark-text{% endif %}">
                             <i class="{% if email.is_starred %}fas{% else %}far{% endif %} fa-star"></i>
                         </button>
                     </form>
@@ -78,27 +78,27 @@
                         <!-- Sender & Subject (mobile: stacked) -->
                         <div class="min-w-0 flex-1">
                             <div class="flex items-center gap-2">
-                                <span class="truncate text-gray-900 text-sm {% if not email.is_read %}font-semibold{% endif %}">
+                                <span class="truncate text-dark-text text-sm {% if not email.is_read %}font-semibold{% endif %}">
                                     {% if email.sender %}
                                         {{ email.sender.email }}
                                     {% else %}
                                         Unknown
                                     {% endif %}
                                 </span>
-                                <span class="text-gray-400 text-xs flex-shrink-0 sm:hidden">
+                                <span class="text-dark-muted text-xs flex-shrink-0 sm:hidden">
                                     {{ email.created_at|datetime }}
                                 </span>
                             </div>
-                            <div class="truncate text-sm {% if not email.is_read %}font-semibold text-gray-900{% else %}text-gray-700{% endif %}">
+                            <div class="truncate text-sm {% if not email.is_read %}font-semibold text-dark-text{% else %}text-dark-muted{% endif %}">
                                 {{ email.subject or '(No subject)' }}
                             </div>
-                            <div class="truncate text-xs text-gray-500 hidden sm:block">
+                            <div class="truncate text-xs text-dark-muted hidden sm:block">
                                 {{ email.body[:80] if email.body else '' }}
                             </div>
                         </div>
 
                         <!-- Date (desktop) -->
-                        <div class="text-gray-400 text-xs whitespace-nowrap flex-shrink-0 ml-2 hidden sm:block">
+                        <div class="text-dark-muted text-xs whitespace-nowrap flex-shrink-0 ml-2 hidden sm:block">
                             {{ email.created_at|datetime }}
                         </div>
                     </a>
@@ -107,7 +107,7 @@
                     <div class="ml-2 hidden sm:flex items-center space-x-1 opacity-0 hover:opacity-100 transition-opacity">
                         <form action="{{ url_for('emails.delete_email', email_id=email.id) }}" method="post"
                               onsubmit="return confirm('Delete this email?')">
-                            <button type="submit" class="text-gray-400 hover:text-red-600 p-1">
+                            <button type="submit" class="text-dark-muted hover:text-red-400 p-1">
                                 <i class="fas fa-trash text-sm"></i>
                             </button>
                         </form>
@@ -118,21 +118,21 @@
 
             <!-- Pagination -->
             {% if total > limit %}
-            <div class="px-3 py-3 border-t border-gray-200 flex items-center justify-between text-sm">
+            <div class="px-3 py-3 border-t border-dark-border flex items-center justify-between text-sm">
                 {% if page > 1 %}
                     <a href="?{% if current_folder %}folder={{ current_folder }}&{% endif %}{% if is_search %}q={{ search_query }}&{% endif %}page={{ page - 1 }}"
-                       class="text-blue-600 hover:text-blue-800">
+                       class="text-dark-accent hover:text-dark-accentHover">
                         <i class="fas fa-chevron-left mr-1"></i> Prev
                     </a>
                 {% else %}
                     <span></span>
                 {% endif %}
 
-                <span class="text-gray-600">{{ page }} / {{ ((total - 1) / limit) | int + 1 }}</span>
+                <span class="text-dark-muted">{{ page }} / {{ ((total - 1) / limit) | int + 1 }}</span>
 
                 {% if page * limit < total %}
                     <a href="?{% if current_folder %}folder={{ current_folder }}&{% endif %}{% if is_search %}q={{ search_query }}&{% endif %}page={{ page + 1 }}"
-                       class="text-blue-600 hover:text-blue-800">
+                       class="text-dark-accent hover:text-dark-accentHover">
                         Next <i class="fas fa-chevron-right ml-1"></i>
                     </a>
                 {% else %}
@@ -141,8 +141,8 @@
             </div>
             {% endif %}
         {% else %}
-            <div class="p-8 text-center text-gray-500">
-                <i class="fas fa-inbox text-4xl sm:text-6xl mb-4 text-gray-300"></i>
+            <div class="p-8 text-center text-dark-muted">
+                <i class="fas fa-inbox text-4xl sm:text-6xl mb-4 text-dark-hover"></i>
                 <p class="text-base sm:text-lg">{% if is_search %}No emails match your search.{% else %}Your inbox is empty.{% endif %}</p>
             </div>
         {% endif %}

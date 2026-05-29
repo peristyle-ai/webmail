@@ -1,28 +1,53 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#2563eb">
+    <meta name="theme-color" content="#0f172a">
     <meta name="description" content="PyPG Mail Client">
     <link rel="manifest" href="/static/manifest.json">
     <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
     <title>Login - PyPG Mail</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            bg: '#0f172a',
+                            card: '#1e293b',
+                            hover: '#334155',
+                            border: '#334155',
+                            text: '#e2e8f0',
+                            muted: '#94a3b8',
+                            accent: '#6366f1',
+                            accentHover: '#818cf8',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         input { font-size: 16px; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
-    <div class="bg-white p-6 sm:p-8 rounded-lg shadow-md w-full max-w-md">
+<body class="bg-dark-bg min-h-screen flex items-center justify-center p-4">
+    <div class="bg-dark-card p-6 sm:p-8 rounded-xl shadow-lg border border-dark-border w-full max-w-md">
         <div class="text-center mb-6">
-            <i class="fas fa-envelope text-4xl text-blue-600 mb-3"></i>
-            <h1 class="text-2xl font-bold text-gray-800">PyPG Mail</h1>
-            <p class="text-gray-600 mt-1">Sign in to access your email</p>
+            <i class="fas fa-envelope text-4xl text-dark-accent mb-3"></i>
+            <h1 class="text-2xl font-bold text-dark-text">PyPG Mail</h1>
+            <p class="text-dark-muted mt-1">Sign in to access your email</p>
         </div>
 
         <form method="post" action="{{ url_for('auth.login') }}" class="space-y-4">
@@ -30,31 +55,31 @@
                 {% if messages %}
                     {% for category, message in messages %}
                         <div class="p-3 rounded-lg text-sm 
-                            {% if category == 'error' %}bg-red-100 text-red-800
-                            {% elif category == 'success' %}bg-green-100 text-green-800
-                            {% elif category == 'warning' %}bg-yellow-100 text-yellow-800
-                            {% else %}bg-blue-100 text-blue-800{% endif %}">
+                            {% if category == 'error' %}bg-red-900/50 text-red-200 border border-red-700
+                            {% elif category == 'success' %}bg-green-900/50 text-green-200 border border-green-700
+                            {% elif category == 'warning' %}bg-yellow-900/50 text-yellow-200 border border-yellow-700
+                            {% else %}bg-blue-900/50 text-blue-200 border border-blue-700{% endif %}">
                             {{ message }}
                         </div>
                     {% endfor %}
                 {% endif %}
             {% endwith %}
             <div>
-                <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <label for="email" class="block text-sm font-medium text-dark-muted mb-1">Email</label>
                 <input type="email" id="email" name="email" required autocomplete="email"
-                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                       class="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-accent text-dark-text placeholder-dark-muted"
                        value="{{ email }}" placeholder="you@example.com">
             </div>
 
             <div>
-                <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <label for="password" class="block text-sm font-medium text-dark-muted mb-1">Password</label>
                 <input type="password" id="password" name="password" required autocomplete="current-password"
-                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                       class="w-full px-4 py-3 bg-dark-bg border border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-accent text-dark-text placeholder-dark-muted"
                        placeholder="Password">
             </div>
 
             <button type="submit"
-                    class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-semibold text-base">
+                    class="w-full bg-dark-accent text-white py-3 rounded-lg hover:bg-dark-accentHover transition font-semibold text-base">
                 Sign In
             </button>
         </form>

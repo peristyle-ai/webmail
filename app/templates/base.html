@@ -1,27 +1,48 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#2563eb">
+    <meta name="theme-color" content="#0f172a">
     <meta name="description" content="PyPG Mail Client">
     <link rel="manifest" href="/static/manifest.json">
     <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
     <title>{% block title %}PyPG Mail{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            bg: '#0f172a',
+                            card: '#1e293b',
+                            hover: '#334155',
+                            border: '#334155',
+                            text: '#e2e8f0',
+                            muted: '#94a3b8',
+                            accent: '#6366f1',
+                            accentHover: '#818cf8',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { -webkit-tap-highlight-color: transparent; }
         body { overscroll-behavior: none; }
 
-        .email-row:hover { background-color: #f3f4f6; }
-        .email-unread { font-weight: 600; }
+        .dark .email-row:hover { background-color: #334155; }
+        .dark .email-unread { font-weight: 600; }
 
         #sidebar-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+            position: fixed; inset: 0; background: rgba(0,0,0,0.5);
             z-index: 40; display: none;
         }
         #sidebar-overlay.active { display: block; }
@@ -38,27 +59,33 @@
             #sidebar.open { transform: translateX(0); }
         }
 
-        .sidebar-link:hover { background-color: #e5e7eb; }
-        .sidebar-link.active { background-color: #d1d5db; }
+        .sidebar-link:hover { background-color: #334155; }
+        .sidebar-link.active { background-color: #4338ca; }
 
         @media (max-width: 639px) {
             .hide-mobile { display: none !important; }
         }
 
         input, select, textarea, button { font-size: 16px; }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
-<body class="bg-gray-100 h-screen flex flex-col overflow-hidden">
+<body class="bg-dark-bg text-dark-text h-screen flex flex-col overflow-hidden">
     <!-- Top Navigation Bar -->
-    <header class="bg-white shadow-sm border-b border-gray-200 px-3 py-2 flex items-center justify-between flex-shrink-0 z-30">
+    <header class="bg-dark-card border-b border-dark-border px-3 py-2 flex items-center justify-between flex-shrink-0 z-30">
         <div class="flex items-center space-x-3">
             {% if session.user %}
-            <button id="menu-toggle" class="p-2 -ml-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg md:hidden">
+            <button id="menu-toggle" class="p-2 -ml-2 text-dark-muted hover:text-dark-text hover:bg-dark-hover rounded-lg md:hidden">
                 <i class="fas fa-bars text-xl"></i>
             </button>
             {% endif %}
-            <a href="{{ url_for('emails.inbox') }}" class="text-xl font-bold text-blue-600 flex items-center">
+            <a href="{{ url_for('emails.inbox') }}" class="text-xl font-bold text-dark-accent flex items-center">
                 <i class="fas fa-envelope mr-2"></i><span class="hidden sm:inline">PyPG Mail</span>
             </a>
         </div>
@@ -67,9 +94,9 @@
         <div class="flex-1 max-w-xl mx-3">
             <form action="{{ url_for('emails.search') }}" method="get" class="relative">
                 <input type="text" name="q" placeholder="Search..."
-                       class="w-full px-4 py-2 pl-9 bg-gray-100 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                       class="w-full px-4 py-2 pl-9 bg-dark-bg border border-dark-border rounded-full focus:outline-none focus:ring-2 focus:ring-dark-accent text-sm text-dark-text placeholder-dark-muted"
                        value="{{ search_query if search_query else '' }}">
-                <button type="submit" class="absolute left-3 top-2.5 text-gray-400">
+                <button type="submit" class="absolute left-3 top-2.5 text-dark-muted">
                     <i class="fas fa-search text-sm"></i>
                 </button>
             </form>
@@ -77,8 +104,8 @@
 
         <div class="flex items-center space-x-3">
             {% if session.user %}
-                <span class="text-gray-600 text-sm hide-mobile">{{ session.user.email }}</span>
-                <a href="{{ url_for('auth.logout') }}" class="text-red-600 hover:text-red-800 p-2">
+                <span class="text-dark-muted text-sm hide-mobile">{{ session.user.email }}</span>
+                <a href="{{ url_for('auth.logout') }}" class="text-red-400 hover:text-red-300 p-2">
                     <i class="fas fa-sign-out-alt"></i>
                 </a>
             {% endif %}
@@ -91,10 +118,10 @@
             <div class="px-3 py-2 flex-shrink-0">
                 {% for category, message in messages %}
                     <div class="p-3 rounded-lg mb-1 text-sm 
-                        {% if category == 'error' %}bg-red-100 text-red-800
-                        {% elif category == 'success' %}bg-green-100 text-green-800
-                        {% elif category == 'warning' %}bg-yellow-100 text-yellow-800
-                        {% else %}bg-blue-100 text-blue-800{% endif %}">
+                        {% if category == 'error' %}bg-red-900/50 text-red-200 border border-red-700
+                        {% elif category == 'success' %}bg-green-900/50 text-green-200 border border-green-700
+                        {% elif category == 'warning' %}bg-yellow-900/50 text-yellow-200 border border-yellow-700
+                        {% else %}bg-blue-900/50 text-blue-200 border border-blue-700{% endif %}">
                         {{ message }}
                     </div>
                 {% endfor %}
@@ -109,11 +136,11 @@
         <div id="sidebar-overlay"></div>
 
         <!-- Sidebar -->
-        <aside id="sidebar" class="w-64 bg-white border-r border-gray-200 flex flex-col overflow-y-auto flex-shrink-0">
+        <aside id="sidebar" class="w-64 bg-dark-card border-r border-dark-border flex flex-col overflow-y-auto flex-shrink-0">
             <!-- Compose Button -->
             <div class="p-3">
                 <a href="{{ url_for('emails.compose') }}"
-                   class="flex items-center justify-center w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition text-sm font-medium">
+                   class="flex items-center justify-center w-full bg-dark-accent text-white py-3 rounded-lg hover:bg-dark-accentHover transition text-sm font-medium">
                     <i class="fas fa-plus mr-2"></i>Compose
                 </a>
             </div>
@@ -121,49 +148,49 @@
             <!-- Navigation -->
             <nav class="flex-1 px-2 overflow-y-auto">
                 <a href="{{ url_for('emails.inbox', folder='Inbox') }}"
-                   class="sidebar-link flex items-center px-3 py-2.5 rounded-lg mb-0.5 text-sm {% if request.endpoint == 'emails.inbox' and current_folder == 'Inbox' %}active{% endif %}">
+                   class="sidebar-link flex items-center px-3 py-2.5 rounded-lg mb-0.5 text-sm {% if request.endpoint == 'emails.inbox' and current_folder == 'Inbox' %}active text-white{% else %}text-dark-muted{% endif %}">
                     <i class="fas fa-inbox w-5 text-center mr-2"></i>
                     <span class="flex-1">Inbox</span>
                     {% if unread_count %}
-                        <span class="bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full">{{ unread_count }}</span>
+                        <span class="bg-dark-accent text-white text-xs px-2 py-0.5 rounded-full">{{ unread_count }}</span>
                     {% endif %}
                 </a>
 
                 <a href="{{ url_for('emails.inbox', folder='Sent') }}"
-                   class="sidebar-link flex items-center px-3 py-2.5 rounded-lg mb-0.5 text-sm {% if current_folder == 'Sent' %}active{% endif %}">
+                   class="sidebar-link flex items-center px-3 py-2.5 rounded-lg mb-0.5 text-sm {% if current_folder == 'Sent' %}active text-white{% else %}text-dark-muted{% endif %}">
                     <i class="fas fa-paper-plane w-5 text-center mr-2"></i>
                     <span>Sent</span>
                 </a>
 
                 <a href="{{ url_for('emails.inbox', folder='Drafts') }}"
-                   class="sidebar-link flex items-center px-3 py-2.5 rounded-lg mb-0.5 text-sm {% if current_folder == 'Drafts' %}active{% endif %}">
+                   class="sidebar-link flex items-center px-3 py-2.5 rounded-lg mb-0.5 text-sm {% if current_folder == 'Drafts' %}active text-white{% else %}text-dark-muted{% endif %}">
                     <i class="fas fa-file w-5 text-center mr-2"></i>
                     <span>Drafts</span>
                 </a>
 
                 <a href="{{ url_for('emails.inbox', flag='starred') }}"
-                   class="sidebar-link flex items-center px-3 py-2.5 rounded-lg mb-0.5 text-sm">
+                   class="sidebar-link flex items-center px-3 py-2.5 rounded-lg mb-0.5 text-sm text-dark-muted">
                     <i class="fas fa-star w-5 text-center mr-2"></i>
                     <span>Starred</span>
                 </a>
 
                 <a href="{{ url_for('emails.inbox', folder='Trash') }}"
-                   class="sidebar-link flex items-center px-3 py-2.5 rounded-lg mb-0.5 text-sm {% if current_folder == 'Trash' %}active{% endif %}">
+                   class="sidebar-link flex items-center px-3 py-2.5 rounded-lg mb-0.5 text-sm {% if current_folder == 'Trash' %}active text-white{% else %}text-dark-muted{% endif %}">
                     <i class="fas fa-trash w-5 text-center mr-2"></i>
                     <span>Trash</span>
                 </a>
 
-                <hr class="my-2 border-gray-200">
+                <hr class="my-2 border-dark-border">
 
                 <!-- Folders -->
-                <div class="px-3 py-1 text-gray-500 text-xs font-semibold uppercase tracking-wider">
+                <div class="px-3 py-1 text-dark-muted text-xs font-semibold uppercase tracking-wider">
                     Folders
                 </div>
 
                 {% for folder in folders %}
                     {% if folder.name not in ['Inbox', 'Sent', 'Drafts', 'Trash'] %}
                     <a href="{{ url_for('emails.inbox', folder=folder.name) }}"
-                       class="sidebar-link flex items-center px-3 py-2.5 rounded-lg mb-0.5 text-sm {% if current_folder == folder.name %}active{% endif %}">
+                       class="sidebar-link flex items-center px-3 py-2.5 rounded-lg mb-0.5 text-sm {% if current_folder == folder.name %}active text-white{% else %}text-dark-muted{% endif %}">
                         <i class="fas fa-folder w-5 text-center mr-2"></i>
                         <span>{{ folder.name }}</span>
                     </a>
@@ -171,32 +198,32 @@
                 {% endfor %}
 
                 <a href="{{ url_for('folders.list_folders') }}"
-                   class="sidebar-link flex items-center px-3 py-2.5 rounded-lg mb-0.5 text-sm text-gray-600">
+                   class="sidebar-link flex items-center px-3 py-2.5 rounded-lg mb-0.5 text-sm text-dark-muted">
                     <i class="fas fa-folder-plus w-5 text-center mr-2"></i>
                     <span>Manage Folders</span>
                 </a>
 
-                <hr class="my-2 border-gray-200">
+                <hr class="my-2 border-dark-border">
 
                 <!-- Admin -->
-                <div class="px-3 py-1 text-gray-500 text-xs font-semibold uppercase tracking-wider">
+                <div class="px-3 py-1 text-dark-muted text-xs font-semibold uppercase tracking-wider">
                     Admin
                 </div>
 
                 <a href="{{ url_for('whitelist.list_whitelist') }}"
-                   class="sidebar-link flex items-center px-3 py-2.5 rounded-lg mb-0.5 text-sm {% if request.endpoint == 'whitelist.list_whitelist' %}active{% endif %}">
+                   class="sidebar-link flex items-center px-3 py-2.5 rounded-lg mb-0.5 text-sm {% if request.endpoint == 'whitelist.list_whitelist' %}active text-white{% else %}text-dark-muted{% endif %}">
                     <i class="fas fa-shield-alt w-5 text-center mr-2"></i>
                     <span>Domain Whitelist</span>
                 </a>
 
                 <a href="{{ url_for('blacklist.list_blacklist') }}"
-                   class="sidebar-link flex items-center px-3 py-2.5 rounded-lg mb-0.5 text-sm {% if request.endpoint == 'blacklist.list_blacklist' %}active{% endif %}">
+                   class="sidebar-link flex items-center px-3 py-2.5 rounded-lg mb-0.5 text-sm {% if request.endpoint == 'blacklist.list_blacklist' %}active text-white{% else %}text-dark-muted{% endif %}">
                     <i class="fas fa-ban w-5 text-center mr-2"></i>
                     <span>IP Blacklist</span>
                 </a>
 
                 <a href="{{ url_for('blocklist.list_blocklist') }}"
-                   class="sidebar-link flex items-center px-3 py-2.5 rounded-lg mb-0.5 text-sm {% if request.endpoint == 'blocklist.list_blocklist' %}active{% endif %}">
+                   class="sidebar-link flex items-center px-3 py-2.5 rounded-lg mb-0.5 text-sm {% if request.endpoint == 'blocklist.list_blocklist' %}active text-white{% else %}text-dark-muted{% endif %}">
                     <i class="fas fa-user-slash w-5 text-center mr-2"></i>
                     <span>Sender Blocklist</span>
                 </a>
@@ -205,35 +232,35 @@
         {% endif %}
 
         <!-- Main Content -->
-        <main class="flex-1 overflow-y-auto bg-white">
+        <main class="flex-1 overflow-y-auto bg-dark-bg">
             {% block content %}{% endblock %}
         </main>
     </div>
 
     <!-- Mobile bottom nav (shows on small screens) -->
     {% if session.user %}
-    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex md:hidden z-20 safe-area-bottom">
+    <nav class="fixed bottom-0 left-0 right-0 bg-dark-card border-t border-dark-border flex md:hidden z-20 safe-area-bottom">
         <a href="{{ url_for('emails.inbox', folder='Inbox') }}"
-           class="flex-1 flex flex-col items-center py-2 text-xs {% if request.endpoint == 'emails.inbox' and current_folder == 'Inbox' %}text-blue-600{% else %}text-gray-500{% endif %}">
+           class="flex-1 flex flex-col items-center py-2 text-xs {% if request.endpoint == 'emails.inbox' and current_folder == 'Inbox' %}text-dark-accent{% else %}text-dark-muted{% endif %}">
             <i class="fas fa-inbox text-lg mb-0.5"></i>
             <span>Inbox</span>
         </a>
         <a href="{{ url_for('emails.search') }}"
-           class="flex-1 flex flex-col items-center py-2 text-xs text-gray-500">
+           class="flex-1 flex flex-col items-center py-2 text-xs text-dark-muted">
             <i class="fas fa-search text-lg mb-0.5"></i>
             <span>Search</span>
         </a>
         <a href="{{ url_for('emails.compose') }}"
-           class="flex-1 flex flex-col items-center py-2 text-xs text-blue-600 font-semibold">
+           class="flex-1 flex flex-col items-center py-2 text-xs text-dark-accent font-semibold">
             <i class="fas fa-plus-circle text-2xl mb-0.5"></i>
             <span>Compose</span>
         </a>
         <a href="{{ url_for('emails.inbox', folder='Sent') }}"
-           class="flex-1 flex flex-col items-center py-2 text-xs {% if current_folder == 'Sent' %}text-blue-600{% else %}text-gray-500{% endif %}">
+           class="flex-1 flex flex-col items-center py-2 text-xs {% if current_folder == 'Sent' %}text-dark-accent{% else %}text-dark-muted{% endif %}">
             <i class="fas fa-paper-plane text-lg mb-0.5"></i>
             <span>Sent</span>
         </a>
-        <button id="mobile-menu-btn" class="flex-1 flex flex-col items-center py-2 text-xs text-gray-500">
+        <button id="mobile-menu-btn" class="flex-1 flex flex-col items-center py-2 text-xs text-dark-muted">
             <i class="fas fa-bars text-lg mb-0.5"></i>
             <span>More</span>
         </button>

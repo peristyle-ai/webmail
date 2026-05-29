@@ -5,39 +5,39 @@
 {% block content %}
 <div class="p-6">
     <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold text-gray-800">Manage Folders</h1>
-        <a href="{{ url_for('emails.inbox') }}" class="text-blue-600 hover:text-blue-800">
+        <h1 class="text-2xl font-bold text-dark-text">Manage Folders</h1>
+        <a href="{{ url_for('emails.inbox') }}" class="text-dark-accent hover:text-dark-accentHover">
             <i class="fas fa-arrow-left mr-2"></i>Back to Inbox
         </a>
     </div>
     
     <!-- Create New Folder -->
-    <div class="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 class="text-lg font-semibold mb-4">Create New Folder</h2>
+    <div class="bg-dark-card border border-dark-border rounded-lg p-6 mb-6">
+        <h2 class="text-lg font-semibold text-dark-text mb-4">Create New Folder</h2>
         <form action="{{ url_for('folders.create_folder') }}" method="post" class="flex gap-4">
             <input type="text" name="name" placeholder="Folder name" required
-                   class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                   class="flex-1 px-4 py-2 bg-dark-bg border border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-accent text-dark-text placeholder-dark-muted">
+            <button type="submit" class="px-6 py-2 bg-dark-accent text-white rounded-lg hover:bg-dark-accentHover">
                 <i class="fas fa-plus mr-2"></i>Create
             </button>
         </form>
     </div>
     
     <!-- Folder List -->
-    <div class="bg-white rounded-lg shadow">
-        <div class="px-6 py-4 border-b border-gray-200">
-            <h2 class="text-lg font-semibold">Your Folders</h2>
+    <div class="bg-dark-card border border-dark-border rounded-lg">
+        <div class="px-6 py-4 border-b border-dark-border">
+            <h2 class="text-lg font-semibold text-dark-text">Your Folders</h2>
         </div>
         
         {% if folders %}
-            <div class="divide-y divide-gray-200">
+            <div class="divide-y divide-dark-border">
                 {% for folder in folders %}
-                <div class="flex items-center justify-between px-6 py-4 hover:bg-gray-50">
+                <div class="flex items-center justify-between px-6 py-4 hover:bg-dark-hover">
                     <div class="flex items-center">
                         <i class="fas fa-folder text-yellow-500 mr-3"></i>
                         <div>
-                            <div class="font-medium text-gray-900">{{ folder.name }}</div>
-                            <div class="text-sm text-gray-500">
+                            <div class="font-medium text-dark-text">{{ folder.name }}</div>
+                            <div class="text-sm text-dark-muted">
                                 {% if folder.id <= 4 %}
                                     System folder
                                 {% else %}
@@ -49,14 +49,14 @@
                     
                     <div class="flex items-center space-x-2">
                         <a href="{{ url_for('emails.inbox', folder=folder.name) }}" 
-                           class="px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg">
+                           class="px-4 py-2 text-dark-accent hover:bg-dark-hover rounded-lg">
                             View
                         </a>
                         
                         {% if folder.id > 4 %}
                         <form action="{{ url_for('folders.delete_folder', folder_id=folder.id) }}" method="post"
                               onsubmit="return confirm('Delete this folder? Emails will not be deleted.')" class="inline">
-                            <button type="submit" class="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg">
+                            <button type="submit" class="px-4 py-2 text-red-400 hover:bg-red-900/30 rounded-lg">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </form>
@@ -66,8 +66,8 @@
                 {% endfor %}
             </div>
         {% else %}
-            <div class="p-8 text-center text-gray-500">
-                <i class="fas fa-folder-open text-6xl mb-4 text-gray-300"></i>
+            <div class="p-8 text-center text-dark-muted">
+                <i class="fas fa-folder-open text-6xl mb-4 text-dark-hover"></i>
                 <p>No folders found</p>
             </div>
         {% endif %}

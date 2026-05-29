@@ -5,52 +5,52 @@
 {% block content %}
 <div class="p-6">
     <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold text-gray-800">Domain Whitelist</h1>
-        <a href="{{ url_for('emails.inbox') }}" class="text-blue-600 hover:text-blue-800">
+        <h1 class="text-2xl font-bold text-dark-text">Domain Whitelist</h1>
+        <a href="{{ url_for('emails.inbox') }}" class="text-dark-accent hover:text-dark-accentHover">
             <i class="fas fa-arrow-left mr-2"></i>Back to Inbox
         </a>
     </div>
     
     <!-- Add Domain -->
-    <div class="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 class="text-lg font-semibold mb-4">Add Domain to Whitelist</h2>
+    <div class="bg-dark-card border border-dark-border rounded-lg p-6 mb-6">
+        <h2 class="text-lg font-semibold text-dark-text mb-4">Add Domain to Whitelist</h2>
         <form action="{{ url_for('whitelist.add_domain') }}" method="post" class="space-y-4">
             <div class="flex gap-4">
                 <input type="text" name="domain" placeholder="example.com" required
-                       class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                       class="flex-1 px-4 py-2 bg-dark-bg border border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-accent text-dark-text placeholder-dark-muted">
             </div>
             <div class="flex gap-4">
                 <input type="text" name="notes" placeholder="Notes (optional)"
-                       class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                       class="flex-1 px-4 py-2 bg-dark-bg border border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-accent text-dark-text placeholder-dark-muted">
                 <button type="submit" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
                     <i class="fas fa-plus mr-2"></i>Add to Whitelist
                 </button>
             </div>
         </form>
-        <p class="text-sm text-gray-500 mt-2">
+        <p class="text-sm text-dark-muted mt-2">
             <i class="fas fa-info-circle mr-1"></i>
             Whitelisted domains are marked as trusted to prevent false positives in spam filtering.
         </p>
     </div>
     
     <!-- Whitelist -->
-    <div class="bg-white rounded-lg shadow">
-        <div class="px-6 py-4 border-b border-gray-200">
-            <h2 class="text-lg font-semibold">Whitelisted Domains</h2>
+    <div class="bg-dark-card border border-dark-border rounded-lg">
+        <div class="px-6 py-4 border-b border-dark-border">
+            <h2 class="text-lg font-semibold text-dark-text">Whitelisted Domains</h2>
         </div>
         
         {% if domains %}
-            <div class="divide-y divide-gray-200">
+            <div class="divide-y divide-dark-border">
                 {% for domain in domains %}
-                <div class="flex items-center justify-between px-6 py-4 hover:bg-gray-50">
+                <div class="flex items-center justify-between px-6 py-4 hover:bg-dark-hover">
                     <div class="flex items-center">
-                        <i class="fas fa-shield-alt text-green-500 mr-3"></i>
+                        <i class="fas fa-shield-alt text-green-400 mr-3"></i>
                         <div>
-                            <div class="font-medium text-gray-900">{{ domain.domain }}</div>
+                            <div class="font-medium text-dark-text">{{ domain.domain }}</div>
                             {% if domain.notes %}
-                                <div class="text-sm text-gray-500">{{ domain.notes }}</div>
+                                <div class="text-sm text-dark-muted">{{ domain.notes }}</div>
                             {% endif %}
-                            <div class="text-xs text-gray-400">
+                            <div class="text-xs text-dark-muted">
                                 Added {{ domain.created_at.strftime('%Y-%m-%d') if domain.created_at else 'Unknown' }}
                             </div>
                         </div>
@@ -58,7 +58,7 @@
                     
                     <form action="{{ url_for('whitelist.remove_domain', domain_id=domain.id) }}" method="post"
                           onsubmit="return confirm('Remove this domain from whitelist?')" class="inline">
-                        <button type="submit" class="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg">
+                        <button type="submit" class="px-4 py-2 text-red-400 hover:bg-red-900/30 rounded-lg">
                             <i class="fas fa-trash"></i>
                         </button>
                     </form>
@@ -66,8 +66,8 @@
                 {% endfor %}
             </div>
         {% else %}
-            <div class="p-8 text-center text-gray-500">
-                <i class="fas fa-shield-alt text-6xl mb-4 text-gray-300"></i>
+            <div class="p-8 text-center text-dark-muted">
+                <i class="fas fa-shield-alt text-6xl mb-4 text-dark-hover"></i>
                 <p>No domains in whitelist</p>
                 <p class="text-sm mt-2">Add trusted domains to prevent them from being flagged as spam</p>
             </div>

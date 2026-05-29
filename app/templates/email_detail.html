@@ -5,8 +5,8 @@
 {% block content %}
 <div class="p-3 sm:p-6 pb-20 md:pb-6">
     <!-- Back + Actions -->
-    <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200 overflow-x-auto">
-        <a href="{{ url_for('emails.inbox') }}" class="text-blue-600 hover:text-blue-800 flex-shrink-0 text-sm">
+    <div class="flex items-center gap-2 mb-4 pb-3 border-b border-dark-border overflow-x-auto">
+        <a href="{{ url_for('emails.inbox') }}" class="text-dark-accent hover:text-dark-accentHover flex-shrink-0 text-sm">
             <i class="fas fa-arrow-left mr-1"></i>Back
         </a>
 
@@ -14,41 +14,41 @@
 
         <div class="flex items-center gap-1.5 flex-shrink-0">
             <a href="{{ url_for('emails.reply', email_id=email.id) }}"
-               class="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+               class="px-3 py-1.5 bg-dark-accent text-white rounded-lg hover:bg-dark-accentHover text-sm">
                 <i class="fas fa-reply mr-1"></i><span class="hidden sm:inline">Reply</span>
             </a>
 
             <a href="{{ url_for('emails.forward', email_id=email.id) }}"
-               class="px-3 py-1.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm">
+               class="px-3 py-1.5 bg-dark-hover text-dark-text rounded-lg hover:bg-dark-border text-sm">
                 <i class="fas fa-share mr-1"></i><span class="hidden sm:inline">Forward</span>
             </a>
 
             <!-- More actions toggle (mobile) -->
-            <button id="more-actions-btn" class="px-2 py-1.5 bg-gray-200 rounded-lg text-sm md:hidden">
+            <button id="more-actions-btn" class="px-2 py-1.5 bg-dark-hover rounded-lg text-sm md:hidden text-dark-text">
                 <i class="fas fa-ellipsis-v"></i>
             </button>
         </div>
     </div>
 
     <!-- Expandable actions (shown via more btn on mobile, always on desktop) -->
-    <div id="more-actions" class="hidden md:flex items-center gap-1.5 mb-4 pb-3 border-b border-gray-200 md:border-0 md:mb-0 md:pb-0">
+    <div id="more-actions" class="hidden md:flex items-center gap-1.5 mb-4 pb-3 border-b border-dark-border md:border-0 md:mb-0 md:pb-0">
         <form action="{{ url_for('emails.toggle_star', email_id=email.id) }}" method="post" class="inline">
             <button type="submit"
-                    class="px-3 py-1.5 {% if email.is_starred %}bg-yellow-500{% else %}bg-gray-200{% endif %} rounded-lg hover:opacity-80 text-sm">
+                    class="px-3 py-1.5 {% if email.is_starred %}bg-yellow-600{% else %}bg-dark-hover{% endif %} rounded-lg hover:opacity-80 text-sm text-dark-text">
                 <i class="{% if email.is_starred %}fas{% else %}far{% endif %} fa-star mr-1"></i>
                 {% if email.is_starred %}Unstar{% else %}Star{% endif %}
             </button>
         </form>
 
         <form action="{{ url_for('emails.mark_read', email_id=email.id) }}" method="post" class="inline">
-            <button type="submit" class="px-3 py-1.5 bg-gray-200 rounded-lg hover:bg-gray-300 text-sm">
+            <button type="submit" class="px-3 py-1.5 bg-dark-hover rounded-lg hover:bg-dark-border text-sm text-dark-text">
                 <i class="fas fa-envelope-open mr-1"></i><span class="hidden sm:inline">Mark Read</span>
             </button>
         </form>
 
         <form action="{{ url_for('emails.move_email', email_id=email.id) }}" method="post" class="inline">
             <select name="folder_id" onchange="this.form.submit()"
-                    class="px-2 py-1.5 border border-gray-300 rounded-lg text-sm">
+                    class="px-2 py-1.5 bg-dark-card border border-dark-border rounded-lg text-sm text-dark-text">
                 <option value="">Move to...</option>
                 {% for folder in folders %}
                     {% if folder.id != email.folder_id %}
@@ -82,24 +82,24 @@
 
     <!-- Email Header -->
     <div class="mb-4">
-        <h1 class="text-lg sm:text-2xl font-bold text-gray-900 mb-3">{{ email.subject or '(No subject)' }}</h1>
+        <h1 class="text-lg sm:text-2xl font-bold text-dark-text mb-3">{{ email.subject or '(No subject)' }}</h1>
 
         <div class="flex items-start gap-3">
-            <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+            <div class="w-10 h-10 bg-dark-accent rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                 {{ email.sender.email[0].upper() if email.sender and email.sender.email else '?' }}
             </div>
 
             <div class="flex-1 min-w-0">
                 <div class="flex items-center justify-between gap-2">
                     <div class="min-w-0">
-                        <div class="font-semibold text-gray-900 text-sm truncate">
+                        <div class="font-semibold text-dark-text text-sm truncate">
                             {{ email.sender.email if email.sender else 'Unknown' }}
                         </div>
-                        <div class="text-xs text-gray-500 truncate">
+                        <div class="text-xs text-dark-muted truncate">
                             To: {{ email.recipient.email if email.recipient else 'Unknown' }}
                         </div>
                     </div>
-                    <div class="text-xs text-gray-500 flex-shrink-0">
+                    <div class="text-xs text-dark-muted flex-shrink-0">
                         {{ email.created_at|datetime }}
                     </div>
                 </div>
@@ -108,12 +108,12 @@
     </div>
 
     <!-- Email Body - sandboxed in iframe -->
-    {% set email_content = email.html if email.html else email.body if email.body else '<p style="color: #6b7280;">(No content)</p>' %}
+    {% set email_content = email.html if email.html else email.body if email.body else '<p style="color: #94a3b8;">(No content)</p>' %}
 
-    <div class="border border-gray-200 rounded-lg overflow-hidden">
+    <div class="border border-dark-border rounded-lg overflow-hidden">
         <iframe id="email-frame"
                 sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"
-                class="w-full bg-white"
+                class="w-full bg-dark-card"
                 style="min-height: 200px; border: none;"></iframe>
     </div>
 
@@ -140,21 +140,22 @@
         }
 
         var isHtml = content.trim().charAt(0) === '<' && (content.includes('</') || content.includes('/>'));
+        var bgColor = getComputedStyle(document.documentElement).getPropertyValue('--tw-bg-opacity') ? '#0f172a' : '#1e293b';
 
         var displayContent;
         if (isHtml) {
             displayContent = content;
         } else {
             var escaped = content.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-            displayContent = '<pre style="white-space: pre-wrap; word-wrap: break-word; font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; line-height: 1.6; font-size: 14px; margin: 0; padding: 12px;">' + escaped + '</pre>';
+            displayContent = '<pre style="white-space: pre-wrap; word-wrap: break-word; font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; line-height: 1.6; font-size: 14px; margin: 0; padding: 12px; color: #e2e8f0; background: #1e293b;">' + escaped + '</pre>';
         }
 
         var html = '<!DOCTYPE html><html><head>' +
             '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
             '<style>' +
-            'html, body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; font-size: 14px; }' +
+            'html, body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; font-size: 14px; background: #1e293b; color: #e2e8f0; }' +
             'img { max-width: 100%; height: auto; }' +
-            'a { color: #2563eb; }' +
+            'a { color: #818cf8; }' +
             '</style>' +
             '</head><body>' + displayContent + '</body></html>';
 
@@ -175,12 +176,12 @@
 
     <!-- Attachments -->
     {% if attachments %}
-    <div class="mt-4 pt-3 border-t border-gray-200">
-        <h3 class="font-semibold mb-2 text-sm">Attachments</h3>
+    <div class="mt-4 pt-3 border-t border-dark-border">
+        <h3 class="font-semibold mb-2 text-sm text-dark-text">Attachments</h3>
         <div class="flex flex-wrap gap-2">
             {% for attachment in attachments %}
-            <div class="flex items-center px-3 py-2 bg-gray-100 rounded-lg text-sm">
-                <i class="fas fa-paperclip mr-2 text-gray-500"></i>
+            <div class="flex items-center px-3 py-2 bg-dark-hover rounded-lg text-sm">
+                <i class="fas fa-paperclip mr-2 text-dark-muted"></i>
                 {% if attachment.file_size < 1024 %}
                     {% set size_str = attachment.file_size|string + ' B' %}
                 {% elif attachment.file_size < 1048576 %}
@@ -189,10 +190,10 @@
                     {% set size_str = (attachment.file_size / 1048576)|round(1)|string + ' MB' %}
                 {% endif %}
                 <a href="{{ url_for('emails.download_attachment', attachment_id=attachment.id) }}"
-                   class="text-blue-600 hover:text-blue-800 hover:underline">
+                   class="text-dark-accent hover:text-dark-accentHover hover:underline">
                     {{ attachment.file_name }}
                 </a>
-                <span class="ml-2 text-xs text-gray-500">({{ size_str }})</span>
+                <span class="ml-2 text-xs text-dark-muted">({{ size_str }})</span>
             </div>
             {% endfor %}
         </div>
