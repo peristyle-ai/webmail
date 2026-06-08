@@ -69,6 +69,32 @@ class MailServerAPI:
     def get_attachments(self, token, email_id):
         """Get attachments for an email"""
         return self._make_request('GET', f'/api/emails/{email_id}/attachments', token)
+
+    def download_attachment(self, token, attachment_id):
+        """Download attachment content and metadata."""
+        headers = {'Authorization': f'Bearer {token}'}
+        response = requests.get(f'{self.base_url}/api/attachments/{attachment_id}', headers=headers)
+
+        if response.status_code == 401:
+            raise AuthenticationError("Invalid or expired token")
+
+        response.raise_for_status()
+
+        content_disp = response.headers.get('Content-Disposition', '')
+        filename = f'attachment-{attachment_id}'
+        if 'filename="' in content_disp:
+            start = content_disp.index('filename="') + len('filename="')
+            end = content_disp.index('"', start)
+            filename = content_disp[start:end]
+        elif 'filename=' in content_disp:
+            start = content_disp.index('filename=') + len('filename=')
+            filename = content_disp[start:].split(';')[0].strip().strip('"\'')
+
+        return {
+            'filename': filename,
+            'content_type': response.headers.get('Content-Type', 'application/octet-stream'),
+            'content': response.content,
+        }
     
     def send_email(self, token, to, subject, body, cc=None, bcc=None):
         """Send a new email"""
@@ -84,6 +110,24 @@ class MailServerAPI:
         headers = {'Authorization': f'Bearer {token}'}
         files = {'file': (file_storage.filename, file_storage.stream, file_storage.content_type)}
         url = f'{self.base_url}/api/emails/{email_id}/attachments'
+        response = requests.post(url, headers=headers, files=files)
+        if response.status_code == 401:
+            raise AuthenticationError("Invalid or expired token")
+        response.raise_for_status()
+        return response.json()
+
+    def copy_attachment(self, token, source_attachment_id, target_email_id):
+        """Copy an existing attachment onto another email."""
+        attachment = self.download_attachment(token, source_attachment_id)
+        headers = {'Authorization': f'Bearer {token}'}
+        files = {
+            'file': (
+                attachment['filename'],
+                attachment['content'],
+                attachment['content_type'],
+            )
+        }
+        url = f'{self.base_url}/api/emails/{target_email_id}/attachments'
         response = requests.post(url, headers=headers, files=files)
         if response.status_code == 401:
             raise AuthenticationError("Invalid or expired token")

@@ -306,19 +306,36 @@ def download_attachment(attachment_id):
 @emails_bp.route('/compose', methods=['GET', 'POST'])
 @require_auth
 def compose():
+    forwarded_attachments = []
+
     if request.method == 'POST':
         to = request.form.get('to', '').strip()
         subject = request.form.get('subject', '').strip()
         body = request.form.get('body', '').strip()
         files = request.files.getlist('attachments')
+        forward_email_id = request.form.get('forward_email_id', '').strip()
+
+        if forward_email_id:
+            try:
+                forwarded_attachments = api.get_attachments(session['token'], int(forward_email_id)) or []
+            except Exception:
+                forwarded_attachments = []
 
         if not to or not subject:
             flash('To and Subject are required', 'error')
-            return render_template('compose.html', to=to, subject=subject, body=body)
+            return render_template(
+                'compose.html',
+                to=to,
+                subject=subject,
+                body=body,
+                forward_email_id=forward_email_id,
+                forwarded_attachments=forwarded_attachments,
+            )
 
         try:
             result = api.send_email(session['token'], to, subject, body)
             email_id = result.get('id') if result else None
+            forward_copy_failed = False
 
             if email_id and files:
                 for f in files:
@@ -328,7 +345,20 @@ def compose():
                         except Exception:
                             pass
 
-            flash('Email sent successfully!', 'success')
+            if email_id and forward_email_id:
+                for attachment in forwarded_attachments:
+                    attachment_id = attachment.get('id')
+                    if not attachment_id:
+                        continue
+                    try:
+                        api.copy_attachment(session['token'], attachment_id, email_id)
+                    except Exception:
+                        forward_copy_failed = True
+
+            if forward_copy_failed:
+                flash('Email sent, but one or more forwarded attachments could not be copied.', 'warning')
+            else:
+                flash('Email sent successfully!', 'success')
             return redirect(url_for('emails.inbox'))
         except AuthenticationError:
             session.clear()
@@ -336,13 +366,34 @@ def compose():
             return redirect(url_for('auth.login'))
         except APIError as e:
             flash(str(e), 'error')
-            return render_template('compose.html', to=to, subject=subject, body=body)
+            return render_template(
+                'compose.html',
+                to=to,
+                subject=subject,
+                body=body,
+                forward_email_id=forward_email_id,
+                forwarded_attachments=forwarded_attachments,
+            )
 
     to = request.args.get('to', '')
     subject = request.args.get('subject', '')
     body = request.args.get('body', '')
+    forward_email_id = request.args.get('forward_email_id', '').strip()
 
-    return render_template('compose.html', to=to, subject=subject, body=body)
+    if forward_email_id:
+        try:
+            forwarded_attachments = api.get_attachments(session['token'], int(forward_email_id)) or []
+        except Exception:
+            forwarded_attachments = []
+
+    return render_template(
+        'compose.html',
+        to=to,
+        subject=subject,
+        body=body,
+        forward_email_id=forward_email_id,
+        forwarded_attachments=forwarded_attachments,
+    )
 
 def add_to_blocklist(email_address=None, domain=None):
     """Block sender or domain on mail server"""
@@ -583,14 +634,14 @@ def forward(email_id):
         email = api.get_email(session['token'], email_id)
         
         # Build forward
-        subject = f"Fw: {email.get('subject', '')}"
+        subject = email.get('subject', '')
         if not subject.startswith('Fw: '):
             subject = f"Fw: {subject}"
         
         # Quote original
         quoted_body = f"\n\n---------- Forwarded message ----------\nFrom: {email.get('sender', {}).get('email', '')}\nDate: {email.get('created_at', '')}\nSubject: {email.get('subject', '')}\n\n{email.get('body', '')}"
         
-        return redirect(url_for('emails.compose', subject=subject, body=quoted_body))
+        return redirect(url_for('emails.compose', subject=subject, body=quoted_body, forward_email_id=email_id))
     except (AuthenticationError, APIError) as e:
         flash(str(e), 'error')
         return redirect(url_for('emails.email_detail', email_id=email_id))
