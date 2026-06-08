@@ -19,14 +19,16 @@ def login():
             session['token'] = token
             session['user'] = user
             session.permanent = True
-            return redirect(url_for('emails.inbox'))
+            response = redirect(url_for('emails.inbox'))
+            response.set_cookie('last_email', email, max_age=365*24*60*60)
+            return response
         except AuthenticationError:
             flash('Invalid email or password', 'error')
         except APIError as e:
             flash(str(e), 'error')
     
-    # Pre-fill with authorized user email
-    return render_template('login.html', email='the operator@example.com.au')
+    email = request.cookies.get('last_email', '')
+    return render_template('login.html', email=email)
 
 @auth_bp.route('/logout')
 def logout():
