@@ -614,9 +614,11 @@ def reply(email_id):
             subject = "Re: (No subject)"
         
         # Quote original
+        from app import format_datetime
         sender_email = email.get('sender', {}).get('email', 'Unknown') if email.get('sender') else 'Unknown'
+        sent_at = format_datetime(email.get('created_at', '')) or email.get('created_at', '')
         body_text = email.get('body', '')
-        quoted_body = f"\n\nOn {email.get('created_at', '')}, {sender_email} wrote:\n> {body_text.replace(chr(10), chr(10) + '> ')}"
+        quoted_body = f"\n\nOn {sent_at}, {sender_email} wrote:\n> {body_text.replace(chr(10), chr(10) + '> ')}"
         
         return redirect(url_for('emails.compose', to=to, subject=subject, body=quoted_body))
     except AuthenticationError:
