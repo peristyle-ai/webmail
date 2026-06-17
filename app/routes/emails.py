@@ -310,6 +310,7 @@ def compose():
 
     if request.method == 'POST':
         to = request.form.get('to', '').strip()
+        cc = request.form.get('cc', '').strip()
         subject = request.form.get('subject', '').strip()
         body = request.form.get('body', '').strip()
         files = request.files.getlist('attachments')
@@ -326,6 +327,7 @@ def compose():
             return render_template(
                 'compose.html',
                 to=to,
+                cc=cc,
                 subject=subject,
                 body=body,
                 forward_email_id=forward_email_id,
@@ -333,7 +335,7 @@ def compose():
             )
 
         try:
-            result = api.send_email(session['token'], to, subject, body)
+            result = api.send_email(session['token'], to, subject, body, cc=cc or None)
             email_id = result.get('id') if result else None
             forward_copy_failed = False
 
@@ -369,6 +371,7 @@ def compose():
             return render_template(
                 'compose.html',
                 to=to,
+                cc=cc,
                 subject=subject,
                 body=body,
                 forward_email_id=forward_email_id,
@@ -376,6 +379,7 @@ def compose():
             )
 
     to = request.args.get('to', '')
+    cc = request.args.get('cc', '')
     subject = request.args.get('subject', '')
     body = request.args.get('body', '')
     forward_email_id = request.args.get('forward_email_id', '').strip()
@@ -389,6 +393,7 @@ def compose():
     return render_template(
         'compose.html',
         to=to,
+        cc=cc,
         subject=subject,
         body=body,
         forward_email_id=forward_email_id,
