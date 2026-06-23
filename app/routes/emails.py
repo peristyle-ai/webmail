@@ -646,7 +646,12 @@ def forward(email_id):
             subject = f"Fw: {subject}"
         
         # Quote original
-        quoted_body = f"\n\n---------- Forwarded message ----------\nFrom: {email.get('sender', {}).get('email', '')}\nDate: {email.get('created_at', '')}\nSubject: {email.get('subject', '')}\n\n{email.get('body', '')}"
+        if not email.get('recipient') and email.get('headers'):
+            recipient = extract_recipient_from_headers(email['headers'])
+            if recipient:
+                email['recipient'] = recipient
+        recipient_email = email.get('recipient', {}).get('email', '') if email.get('recipient') else ''
+        quoted_body = f"\n\n---------- Forwarded message ----------\nFrom: {email.get('sender', {}).get('email', '')}\nDate: {email.get('created_at', '')}\nSubject: {email.get('subject', '')}\nTo: {recipient_email}\n\n{email.get('body', '')}"
         
         return redirect(url_for('emails.compose', subject=subject, body=quoted_body, forward_email_id=email_id))
     except (AuthenticationError, APIError) as e:
