@@ -52,11 +52,9 @@
         <div class="flex items-center justify-between flex-wrap gap-2">
             <span id="selected-count" class="text-sm text-dark-text">0 selected</span>
             <div class="flex items-center gap-2 flex-wrap">
-                {% if view == 'threads' %}
                 <button id="bulk-read-btn" class="bg-dark-accent hover:bg-dark-accentHover text-white px-3 py-1.5 rounded text-sm">
                     <i class="fas fa-envelope-open mr-1"></i> Mark read
                 </button>
-                {% else %}
                 <select id="bulk-folder-select" class="px-2 py-1.5 bg-dark-card border border-dark-border rounded text-sm text-dark-text">
                     <option value="">Move to...</option>
                     {% for folder in folders %}
@@ -75,7 +73,6 @@
                 <button id="block-domain-btn" class="bg-orange-800 hover:bg-orange-900 text-white px-3 py-1.5 rounded text-sm hidden sm:inline-flex">
                     <i class="fas fa-globe mr-1"></i> Block Domain
                 </button>
-                {% endif %}
             </div>
         </div>
     </div>
@@ -127,7 +124,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const bulkActions = document.getElementById('bulk-actions');
     const selectedCount = document.getElementById('selected-count');
     const selectedIds = document.getElementById('selected-ids');
-    const view = {{ view | tojson }};
 
     function updateBulkActions() {
         const selected = Array.from(checkboxes).filter(c => c.checked);
@@ -146,6 +142,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function performBulkAction(action, confirmMsg) {
+        // Kept for compatibility; new code uses submitBulkForm() which
+        // resolves thread IDs to email IDs first.
         const selected = Array.from(checkboxes).filter(c => c.checked);
         if (selected.length === 0) return;
         if (!confirm(confirmMsg + selected.length + (view === 'threads' ? ' thread(s)?' : ' email(s)?'))) return;
@@ -173,15 +171,97 @@ document.addEventListener('DOMContentLoaded', function() {
     // even before any user interaction).
     updateBulkActions();
 
-    {% if view == 'threads' %}
-    // Thread view: bulk mark-read via /api/threads/<id>/read
+    // ===================================================================
+    // Bulk actions - work for both thread-grouped and per-email views.
+    //
+    // In thread mode, the selected row IDs are thread UUIDs. The server
+    // only has bulk-* endpoints for email IDs, so we expand thread UUIDs
+    // to email IDs by fetching /api/threads/<id>/messages for each
+    // selected thread in parallel. In email mode the checkbox values
+    // are already email IDs so no expansion is needed.
+    // ===================================================================
+    const view = {{ view | tojson }};
+    const API_BASE = {{ api_base_url | tojson }};
+    const JWT_TOKEN = {{ jwt_token | tojson }};
+
+    /**
+     * Resolve the currently-selected row IDs into a flat list of email IDs.
+     * In thread mode this fans out to <api>/threads/<id>/messages in parallel.
+     * In email mode it returns the IDs as-is.
+     */
+    async function resolveEmailIds() {
+        const raw = (selectedIds.value || '').split(',').filter(Boolean);
+        if (raw.length === 0) return [];
+        if (view === 'emails') {
+            return raw.map(s => parseInt(s, 10)).filter(n => !isNaN(n));
+        }
+        // Thread mode: expand each thread UUID to its message IDs by calling
+        // the mail-server API directly (the client runs on :5005; the API
+        // lives on the configured MAIL_SERVER_API_URL, typically :5003).
+        const results = await Promise.allSettled(raw.map(async tid => {
+            const r = await fetch(API_BASE + '/api/threads/' + encodeURIComponent(tid) + '/messages', {
+                headers: {
+                    'Accept': 'application/json',
+                    'Authorization': 'Bearer ' + JWT_TOKEN,
+                }
+            });
+            if (!r.ok) throw new Error('thread ' + tid + ' fetch failed: ' + r.status);
+            const data = await r.json();
+            return (data.messages || []).map(m => m.id);
+        }));
+        const ok = results.filter(r => r.status === 'fulfilled').map(r => r.value);
+        const flat = [].concat(...ok);
+        return flat;
+    }
+
+    function setBusy(busy) {
+        [bulkReadBtn, bulkMoveBtn, bulkDeleteBtn, blockSenderBtn, blockDomainBtn].forEach(b => {
+            if (b) b.disabled = busy;
+        });
+        const sel = document.getElementById('bulk-folder-select');
+        if (sel) sel.disabled = busy;
+    }
+
+    /** Submit a form via POST with email_ids (resolved from selection). */
+    async function submitBulkForm(action, confirmMsg, extraFields) {
+        const rawCount = (selectedIds.value || '').split(',').filter(Boolean).length;
+        if (rawCount === 0) {
+            alert('Please select ' + (view === 'threads' ? 'threads' : 'emails'));
+            return;
+        }
+        const emailIds = await resolveEmailIds();
+        if (emailIds.length === 0) {
+            alert('Could not resolve emails for the selected ' + (view === 'threads' ? 'threads' : 'emails') + '.');
+            return;
+        }
+        const noun = view === 'threads'
+            ? rawCount + ' thread(s) (' + emailIds.length + ' email(s) total)'
+            : emailIds.length + ' email(s)';
+        if (!confirm(confirmMsg + noun + '?')) return;
+        setBusy(true);
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = action;
+        let html = '<input type="hidden" name="email_ids" value="' + emailIds.join(',') + '">';
+        if (extraFields) {
+            for (const [k, v] of Object.entries(extraFields)) {
+                html += '<input type="hidden" name="' + k + '" value="' + v + '">';
+            }
+        }
+        form.innerHTML = html;
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    // ----- Mark read (thread mode only; email mode has per-row mark-read) -----
     const bulkReadBtn = document.getElementById('bulk-read-btn');
     if (bulkReadBtn) {
+        bulkReadBtn.style.display = view === 'threads' ? '' : 'none';
         bulkReadBtn.addEventListener('click', async function() {
             const ids = (selectedIds.value || '').split(',').filter(Boolean);
             if (ids.length === 0) return;
             if (!confirm('Mark ' + ids.length + ' thread(s) as read?')) return;
-
+            setBusy(true);
             const results = await Promise.allSettled(ids.map(id =>
                 fetch('/threads/' + encodeURIComponent(id) + '/read', {
                     method: 'POST',
@@ -190,54 +270,41 @@ document.addEventListener('DOMContentLoaded', function() {
             ));
             const ok = results.filter(r => r.status === 'fulfilled').length;
             const failed = ids.length - ok;
-            if (failed === 0) {
-                window.location.reload();
-            } else {
-                alert('Marked ' + ok + ' as read, ' + failed + ' failed.');
-                window.location.reload();
-            }
+            alert('Marked ' + ok + ' as read' + (failed ? ', ' + failed + ' failed' : '') + '.');
+            window.location.reload();
         });
     }
-    {% else %}
-    // Email view: bulk delete/move/block-sender/block-domain (existing routes)
+
+    // ----- Delete / Block Sender / Block Domain (work in both views) -----
     const bulkDeleteBtn = document.getElementById('bulk-delete-btn');
     const blockSenderBtn = document.getElementById('block-sender-btn');
     const blockDomainBtn = document.getElementById('block-domain-btn');
 
     if (bulkDeleteBtn) {
         bulkDeleteBtn.addEventListener('click', function() {
-            performBulkAction("{{ url_for('emails.bulk_delete') }}", 'Delete ');
+            submitBulkForm("{{ url_for('emails.bulk_delete') }}", 'Delete ');
         });
     }
     if (blockSenderBtn) {
         blockSenderBtn.addEventListener('click', function() {
-            performBulkAction("{{ url_for('emails.bulk_block_sender') }}", 'Block sender for ');
+            submitBulkForm("{{ url_for('emails.bulk_block_sender') }}", 'Block sender for ');
         });
     }
     if (blockDomainBtn) {
         blockDomainBtn.addEventListener('click', function() {
-            performBulkAction("{{ url_for('emails.bulk_block_domain') }}", 'Block domain for ');
+            submitBulkForm("{{ url_for('emails.bulk_block_domain') }}", 'Block domain for ');
         });
     }
 
+    // ----- Move to folder (works in both views) -----
     const bulkMoveBtn = document.getElementById('bulk-move-btn');
     if (bulkMoveBtn) {
-        bulkMoveBtn.addEventListener('click', function() {
-            const selected = Array.from(checkboxes).filter(c => c.checked);
-            if (selected.length === 0) { alert('Please select emails to move'); return; }
+        bulkMoveBtn.addEventListener('click', async function() {
             const folderId = document.getElementById('bulk-folder-select').value;
             if (!folderId) { alert('Please select a folder'); return; }
-
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = "{{ url_for('emails.bulk_move') }}";
-            form.innerHTML = '<input type="hidden" name="email_ids" value="' + selectedIds.value + '">' +
-                             '<input type="hidden" name="folder_id" value="' + folderId + '">';
-            document.body.appendChild(form);
-            form.submit();
+            await submitBulkForm("{{ url_for('emails.bulk_move') }}", 'Move ', {folder_id: folderId});
         });
     }
-    {% endif %}
 });
 </script>
 {% endblock %}

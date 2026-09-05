@@ -81,7 +81,13 @@ def create_app():
 
     @app.context_processor
     def inject_globals():
-        return dict(folders=[], current_folder=session.get('current_folder', 'Inbox'))
+        from config import Config
+        return dict(
+            folders=[],
+            current_folder=session.get('current_folder', 'Inbox'),
+            api_base_url=Config.MAIL_SERVER_API_URL,
+            jwt_token=session.get('token') or '',
+        )
 
     # Initialize database
     from app.db import init_db
