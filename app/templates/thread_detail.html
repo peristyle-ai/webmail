@@ -85,6 +85,78 @@
                     class="w-full bg-dark-card"
                     style="min-height: 160px; border: none;"></iframe>
 
+            <!-- Per-message action toolbar (same actions as email_detail.html,
+                 but compact icons-only to fit multiple messages per thread) -->
+            <div class="flex items-center flex-wrap gap-1 px-3 py-2 sm:px-4 border-t border-dark-border bg-dark-bg/40">
+                <a href="{{ url_for('emails.reply', email_id=msg.id) }}"
+                   class="px-2 py-1 bg-dark-accent text-white rounded hover:bg-dark-accentHover text-xs"
+                   title="Reply to this message">
+                    <i class="fas fa-reply"></i><span class="hidden sm:inline ml-1">Reply</span>
+                </a>
+
+                <a href="{{ url_for('emails.forward', email_id=msg.id) }}"
+                   class="px-2 py-1 bg-dark-hover text-dark-text rounded hover:bg-dark-border text-xs"
+                   title="Forward this message">
+                    <i class="fas fa-share"></i><span class="hidden sm:inline ml-1">Forward</span>
+                </a>
+
+                <form action="{{ url_for('emails.toggle_star', email_id=msg.id) }}" method="post" class="inline">
+                    <button type="submit"
+                            class="px-2 py-1 {% if msg.is_starred %}bg-yellow-600 text-dark-text{% else %}bg-dark-hover text-dark-text hover:bg-dark-border{% endif %} rounded text-xs"
+                            title="{% if msg.is_starred %}Unstar{% else %}Star{% endif %}">
+                        <i class="{% if msg.is_starred %}fas{% else %}far{% endif %} fa-star"></i>
+                    </button>
+                </form>
+
+                <form action="{{ url_for('emails.mark_read', email_id=msg.id) }}" method="post" class="inline">
+                    <button type="submit"
+                            class="px-2 py-1 bg-dark-hover text-dark-text rounded hover:bg-dark-border text-xs"
+                            title="Mark this message as read">
+                        <i class="fas fa-envelope-open"></i>
+                    </button>
+                </form>
+
+                <form action="{{ url_for('emails.move_email', email_id=msg.id) }}" method="post" class="inline">
+                    <select name="folder_id" onchange="this.form.submit()"
+                            class="px-1.5 py-1 bg-dark-hover border border-dark-border rounded text-xs text-dark-text"
+                            title="Move to folder">
+                        <option value="">Move…</option>
+                        {% for folder in folders %}
+                            {% if folder.id != msg.folder_id %}
+                            <option value="{{ folder.id }}">{{ folder.name }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </form>
+
+                <form action="{{ url_for('emails.delete_email', email_id=msg.id) }}" method="post" class="inline"
+                      onsubmit="return confirm('Delete this message from the thread?')">
+                    <button type="submit"
+                            class="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs"
+                            title="Delete this message">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </form>
+
+                <form action="{{ url_for('emails.block_sender', email_id=msg.id) }}" method="post" class="inline"
+                      onsubmit="return confirm('Block this sender and delete the message?')">
+                    <button type="submit"
+                            class="px-2 py-1 bg-orange-600 text-white rounded hover:opacity-80 text-xs"
+                            title="Block sender and delete">
+                        <i class="fas fa-ban"></i>
+                    </button>
+                </form>
+
+                <form action="{{ url_for('emails.block_domain', email_id=msg.id) }}" method="post" class="inline"
+                      onsubmit="return confirm('Block entire domain and delete the message?')">
+                    <button type="submit"
+                            class="px-2 py-1 bg-orange-800 text-white rounded hover:opacity-80 text-xs"
+                            title="Block domain and delete">
+                        <i class="fas fa-globe"></i>
+                    </button>
+                </form>
+            </div>
+
             <script>
             (function(frameId, rawContent) {
                 var iframe = document.getElementById(frameId);

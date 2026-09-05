@@ -344,11 +344,18 @@ def thread_detail(thread_id):
                 if recipient:
                     msg['recipient'] = recipient
 
+        folders_data = api.get_folders(session['token'])
+        if isinstance(folders_data, dict):
+            folders_list = folders_data.get('folders', [])
+        else:
+            folders_list = folders_data
+
         return render_template(
             'thread_detail.html',
             thread_id=thread_id,
             subject=thread.get('subject') if thread else None,
             messages=messages,
+            folders=folders_list,
         )
     except AuthenticationError:
         session.clear()
