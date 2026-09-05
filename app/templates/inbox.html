@@ -181,12 +181,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // are already email IDs so no expansion is needed.
     // ===================================================================
     const view = {{ view | tojson }};
-    const API_BASE = {{ api_base_url | tojson }};
-    const JWT_TOKEN = {{ jwt_token | tojson }};
 
     /**
      * Resolve the currently-selected row IDs into a flat list of email IDs.
-     * In thread mode this fans out to <api>/threads/<id>/messages in parallel.
+     * In thread mode this fans out to /api/threads/<id>/messages in parallel
+     * (same-origin via the client's /api proxy, so the browser stays on
+     * HTTPS and avoids mixed-content blocks).
      * In email mode it returns the IDs as-is.
      */
     async function resolveEmailIds() {
@@ -195,15 +195,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (view === 'emails') {
             return raw.map(s => parseInt(s, 10)).filter(n => !isNaN(n));
         }
-        // Thread mode: expand each thread UUID to its message IDs by calling
-        // the mail-server API directly (the client runs on :5005; the API
-        // lives on the configured MAIL_SERVER_API_URL, typically :5003).
         const results = await Promise.allSettled(raw.map(async tid => {
-            const r = await fetch(API_BASE + '/api/threads/' + encodeURIComponent(tid) + '/messages', {
-                headers: {
-                    'Accept': 'application/json',
-                    'Authorization': 'Bearer ' + JWT_TOKEN,
-                }
+            const r = await fetch('/api/threads/' + encodeURIComponent(tid) + '/messages', {
+                headers: {'Accept': 'application/json'}
             });
             if (!r.ok) throw new Error('thread ' + tid + ' fetch failed: ' + r.status);
             const data = await r.json();

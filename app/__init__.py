@@ -81,13 +81,7 @@ def create_app():
 
     @app.context_processor
     def inject_globals():
-        from config import Config
-        return dict(
-            folders=[],
-            current_folder=session.get('current_folder', 'Inbox'),
-            api_base_url=Config.MAIL_SERVER_API_URL,
-            jwt_token=session.get('token') or '',
-        )
+        return dict(folders=[], current_folder=session.get('current_folder', 'Inbox'))
 
     # Initialize database
     from app.db import init_db
@@ -106,6 +100,7 @@ def create_app():
     from app.routes.whitelist import whitelist_bp
     from app.routes.blacklist import blacklist_bp
     from app.routes.blocklist import blocklist_bp
+    from app.routes.api_proxy import api_proxy_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(emails_bp)
@@ -113,6 +108,7 @@ def create_app():
     app.register_blueprint(whitelist_bp)
     app.register_blueprint(blacklist_bp)
     app.register_blueprint(blocklist_bp)
+    app.register_blueprint(api_proxy_bp)
     
     # Register error handlers
     @app.errorhandler(404)

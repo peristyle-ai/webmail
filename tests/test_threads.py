@@ -113,3 +113,51 @@ class TestThreadsApiClient:
             timeout=5,
         )
         assert resp.status_code == 404
+
+
+class TestApiProxy:
+    """Tests for the /api/* same-origin proxy in app/routes/api_proxy.py.
+
+    The proxy exists so the JS can hit /api/threads/... from an HTTPS
+    page without triggering a mixed-content block. It forwards the
+    request to the configured MAIL_SERVER_API_URL using the JWT in the
+    Flask session.
+    """
+
+    def test_proxy_unauthenticated_returns_401(self):
+        """GET /api/threads/<random>/messages without a session -> 401."""
+        from app import create_app
+        app = create_app()
+        with app.test_client() as c:
+            r = c.get('/api/threads/' + str(uuid.uuid4()) + '/messages')
+            assert r.status_code == 401
+
+    def test_proxy_unknown_uuid_returns_404_or_empty(self):
+        """GET /api/threads/<unknown>/messages with auth -> 404 or 200+empty."""
+        token = _register_or_login()
+        from app import create_app
+        app = create_app()
+        with app.test_client() as c:
+            with c.session_transaction() as sess:
+                sess['token'] = token
+            random_uuid = str(uuid.uuid4())
+            r = c.get('/api/threads/' + random_uuid + '/messages')
+            assert r.status_code in (200, 404)
+            if r.status_code == 200:
+                body = r.get_json()
+                assert body.get('messages') == []
+
+    def test_proxy_returns_json_envelope_for_list(self):
+        """GET /api/threads returns the expected envelope shape."""
+        token = _register_or_login()
+        from app import create_app
+        app = create_app()
+        with app.test_client() as c:
+            with c.session_transaction() as sess:
+                sess['token'] = token
+            r = c.get('/api/threads?folder=Inbox&limit=5')
+            assert r.status_code == 200
+            body = r.get_json()
+            assert isinstance(body, dict)
+            for key in ('threads', 'total', 'limit', 'offset'):
+                assert key in body
