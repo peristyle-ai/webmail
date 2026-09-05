@@ -178,7 +178,7 @@
                     'img { max-width: 100%; height: auto; }' +
                     'blockquote { border-left: 3px solid #334155; margin-left: 0; padding-left: 12px; color: #94a3b8; }' +
                     'pre, code { background: #0f172a; color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: monospace; }' +
-                    '</style></head><body>' + displayContent + '</body></html>';
+                    '</style></head><body>' + window.sanitizeEmailHtml(displayContent) + '</body></html>';
                 iframe.srcdoc = doc;
                 iframe.addEventListener('load', function() {
                     try {

@@ -14,6 +14,29 @@
     <title>{% block title %}PyPG Mail{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
+    /**
+     * Strip <script> blocks, inline event handlers, and javascript: URLs
+     * from raw email HTML before it's injected into a sandboxed iframe
+     * via srcdoc. The iframe stays sandboxed (no allow-scripts), but we
+     * also remove the attack surface so the browser doesn't log
+     * "Blocked script execution" warnings for benign marketing pixels
+     * and trackers. Used by email_detail.html and thread_detail.html.
+     *
+     * Defined in <head> so it's available to inline scripts that run
+     * during document parse (the email/thread iframes call it before
+     * the bottom-of-body script block fires).
+     */
+    window.sanitizeEmailHtml = function(html) {
+        if (!html) return '';
+        var s = String(html);
+        s = s.replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi, '');
+        s = s.replace(/<script\b[^>]*\/?>/gi, '');
+        s = s.replace(/\s+on[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '');
+        s = s.replace(/(\s(?:href|src|action|formaction|cite|longdesc)\s*=\s*["']?)\s*javascript:[^"'\s>]*/gi, '$1#');
+        return s;
+    };
+    </script>
+    <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {

@@ -170,7 +170,7 @@
             'img { max-width: 100%; height: auto; }' +
             'a { color: #818cf8; }' +
             '</style>' +
-            '</head><body>' + displayContent + '</body></html>';
+            '</head><body>' + window.sanitizeEmailHtml(displayContent) + '</body></html>';
 
         iframe.srcdoc = html;
 
