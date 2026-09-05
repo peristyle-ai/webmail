@@ -1,0 +1,72 @@
+{# Gmail-style thread-grouped row list.
+
+   Renders one row per thread (instead of one row per email). Click
+   anywhere except the checkbox to open the thread detail view.
+#}
+{% if threads %}
+<div class="px-3 py-2 border-b border-dark-border bg-dark-hover/50 flex items-center">
+    <input type="checkbox" id="select-all"
+           class="w-4 h-4 text-dark-accent rounded mr-3 bg-dark-bg border-dark-border">
+    <span class="text-sm text-dark-muted">Select all</span>
+</div>
+
+<div class="divide-y divide-dark-border">
+    {% for thread in threads %}
+    {% set unread = thread.unread_count|int > 0 %}
+    <div class="thread-row flex items-center gap-2 sm:gap-3 px-3 py-2 sm:px-4 sm:py-2.5
+                {% if unread %}bg-dark-accent/5{% endif %}
+                hover:bg-dark-hover/40 transition-colors">
+        <!-- Checkbox (stops propagation so row click doesn't fire) -->
+        <input type="checkbox" name="thread_select" value="{{ thread.thread_id }}"
+               class="row-checkbox w-4 h-4 text-dark-accent rounded flex-shrink-0 bg-dark-bg border-dark-border"
+               onclick="event.stopPropagation()">
+
+        <!-- Important indicator / unread dot -->
+        <span class="w-3 flex-shrink-0 text-center" aria-hidden="true">
+            {% if unread %}
+            <i class="fas fa-circle text-[8px] text-dark-accent"></i>
+            {% endif %}
+        </span>
+
+        <!-- Clickable area wrapping sender + subject + date -->
+        <a href="{{ url_for('emails.thread_detail', thread_id=thread.thread_id) }}"
+           class="flex-1 min-w-0 flex items-center gap-2 sm:gap-3">
+            <!-- Sender(s) -->
+            <div class="hidden sm:block w-44 lg:w-52 flex-shrink-0 truncate
+                        {% if unread %}font-bold text-dark-text{% else %}text-dark-text{% endif %}">
+                {% set ls = thread.last_sender or {} %}
+                {{ (ls.email if ls.email else (thread.participants[0].email if thread.participants else 'Unknown')) }}
+                {% if thread.message_count|int > 1 %}
+                <span class="ml-1 inline-flex items-center justify-center px-1.5 min-w-[1.25rem] h-5
+                             text-[10px] font-bold rounded-full
+                             {% if unread %}bg-dark-accent text-white{% else %}bg-dark-hover text-dark-muted{% endif %}">
+                    {{ thread.message_count }}
+                </span>
+                {% endif %}
+            </div>
+
+            <!-- Subject + snippet -->
+            <div class="flex-1 min-w-0 flex items-baseline gap-2">
+                <span class="truncate {% if unread %}font-bold text-dark-text{% else %}text-dark-text{% endif %}">
+                    {{ thread.subject or '(No subject)' }}
+                </span>
+                <span class="hidden md:inline text-dark-muted text-sm truncate">
+                    - {{ thread.preview or '' }}
+                </span>
+            </div>
+
+            <!-- Date (right-aligned, fixed width) -->
+            <div class="text-xs text-dark-muted flex-shrink-0 w-14 sm:w-20 text-right
+                        {% if unread %}font-semibold text-dark-text{% endif %}">
+                {{ thread.last_message_at|short_date }}
+            </div>
+        </a>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="p-8 text-center text-dark-muted">
+    <i class="fas fa-inbox text-4xl sm:text-6xl mb-4 text-dark-hover"></i>
+    <p class="text-base sm:text-lg">Your inbox is empty.</p>
+</div>
+{% endif %}

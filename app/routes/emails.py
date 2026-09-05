@@ -161,50 +161,33 @@ def index():
 @emails_bp.route('/inbox')
 @require_auth
 def inbox():
+    """Inbox view - Gmail-style thread grouping by default.
+
+    Query params:
+      folder: folder name (default Inbox)
+      view: 'threads' (default, Gmail-style) | 'emails' (legacy per-email row)
+      page: 1-indexed page (default 1)
+      limit: page size (default 20)
+    """
     try:
-        folder = request.args.get('folder')
+        folder = request.args.get('folder') or 'Inbox'
+        view = request.args.get('view', 'threads')
         page = request.args.get('page', 1, type=int)
-        limit = 20
-        
+        limit = min(request.args.get('limit', 20, type=int), 100)
+
+        session['current_folder'] = folder
+
         folders_data = api.get_folders(session['token'])
         if isinstance(folders_data, dict):
             folders_list = folders_data.get('folders', [])
         else:
             folders_list = folders_data
-        
-        if not folder:
-            folder = 'Inbox'
-        
-        session['current_folder'] = folder
-        
-        emails_data = api.get_emails(session['token'], folder=folder, page=1, limit=1000)
-        
-        if isinstance(emails_data, list):
-            all_emails = emails_data
-        else:
-            all_emails = emails_data.get('emails', [])
-        
-        total_emails = len(all_emails)
-        start_idx = (page - 1) * limit
-        end_idx = start_idx + limit
-        emails_list = all_emails[start_idx:end_idx]
-        
-        for email in emails_list:
-            if not email.get('sender') and email.get('headers'):
-                sender = extract_sender_from_headers(email['headers'])
-                if sender:
-                    email['sender'] = sender
-        
-        unread_count = sum(1 for e in emails_list if not e.get('is_read'))
-        
-        return render_template('inbox.html', 
-                             emails=emails_list,
-                             folders=folders_list,
-                             current_folder=folder,
-                             page=page,
-                             total=total_emails,
-                             limit=limit,
-                             unread_count=unread_count)
+
+        if view == 'emails':
+            return _render_email_row_inbox(folder, page, limit, folders_list)
+
+        return _render_thread_inbox(folder, page, limit, folders_list)
+
     except AuthenticationError:
         session.clear()
         flash('Session expired. Please log in again.', 'warning')
@@ -212,6 +195,80 @@ def inbox():
     except APIError as e:
         flash(str(e), 'error')
         return redirect(url_for('emails.inbox'))
+
+
+def _render_thread_inbox(folder, page, limit, folders_list):
+    """Gmail-style: one row per thread, with message count badge."""
+    offset = (page - 1) * limit
+    # Fetch a generous slice to know total. Limit 200 is the server cap,
+    # so for very large inboxes this will undercount total - acceptable
+    # for the personal mailbox this client targets.
+    threads_resp = api.get_threads(
+        session['token'], folder=folder, page=1, limit=200,
+    )
+    threads = threads_resp.get('threads', [])
+    total = threads_resp.get('total', len(threads))
+    visible_threads = threads[offset:offset + limit]
+    unread_count = sum(t.get('unread_count', 0) for t in visible_threads)
+
+    # Defensive enrichment (server returns last_sender.email etc.)
+    for t in visible_threads:
+        last_sender = t.get('last_sender') or {}
+        if not last_sender.get('email') and t.get('participants'):
+            ps = t['participants']
+            if ps:
+                last_sender = {'email': ps[0]['email'], 'name': ps[0].get('name')}
+                t['last_sender'] = last_sender
+
+    return render_template(
+        'inbox.html',
+        threads=visible_threads,
+        emails=None,
+        folders=folders_list,
+        current_folder=folder,
+        page=page,
+        total=total,
+        limit=limit,
+        unread_count=unread_count,
+        view='threads',
+    )
+
+
+def _render_email_row_inbox(folder, page, limit, folders_list):
+    """Legacy per-email row view, kept for the search results page."""
+    emails_data = api.get_emails(
+        session['token'], folder=folder, page=1, limit=1000,
+    )
+    if isinstance(emails_data, list):
+        all_emails = emails_data
+    else:
+        all_emails = emails_data.get('emails', [])
+
+    total_emails = len(all_emails)
+    start_idx = (page - 1) * limit
+    end_idx = start_idx + limit
+    emails_list = all_emails[start_idx:end_idx]
+
+    for email in emails_list:
+        if not email.get('sender') and email.get('headers'):
+            sender = extract_sender_from_headers(email['headers'])
+            if sender:
+                email['sender'] = sender
+
+    unread_count = sum(1 for e in emails_list if not e.get('is_read'))
+
+    return render_template(
+        'inbox.html',
+        threads=None,
+        emails=emails_list,
+        folders=folders_list,
+        current_folder=folder,
+        page=page,
+        total=total_emails,
+        limit=limit,
+        unread_count=unread_count,
+        view='emails',
+    )
 
 @emails_bp.route('/emails/<int:email_id>')
 @require_auth

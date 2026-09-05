@@ -27,10 +27,57 @@ def format_datetime(value):
         dt = dt.astimezone(ZoneInfo('Australia/Sydney'))
     return dt.strftime('%b %d, %Y %I:%M %p')
 
+
+def format_short_date(value):
+    """Gmail-style short date: today=time, this week=weekday, older=short date."""
+    if not value:
+        return ''
+    # ISO timestamps may carry microseconds (e.g. 2026-09-05T13:57:32.138552+10:00).
+    # %z doesn't tolerate fractional seconds, so strip them before parsing.
+    s = value.strip()
+    if '.' in s and ('+' in s[s.index('.'):] or s.count('-') > 2):
+        head, _, tail = s.partition('.')
+        # Keep only digits before the next non-digit char (timezone or Z)
+        cut = 0
+        while cut < len(tail) and tail[cut].isdigit():
+            cut += 1
+        s = head + tail[cut:]
+    try:
+        for fmt in ('%Y-%m-%dT%H:%M:%S%z', '%Y-%m-%dT%H:%M:%S', '%a, %d %b %Y %H:%M:%S %Z',
+                    '%Y-%m-%d %H:%M:%S'):
+            try:
+                dt = datetime.strptime(s, fmt)
+                break
+            except ValueError:
+                continue
+        else:
+            return value
+    except Exception:
+        return value
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    tz_name = session.get('user', {}).get('timezone', 'Australia/Sydney')
+    try:
+        local_dt = dt.astimezone(ZoneInfo(tz_name))
+    except Exception:
+        local_dt = dt.astimezone(ZoneInfo('Australia/Sydney'))
+    now = datetime.now(local_dt.tzinfo)
+    delta_days = (now.date() - local_dt.date()).days
+    if delta_days < 0:
+        return local_dt.strftime('%b %d')
+    if delta_days == 0:
+        return local_dt.strftime('%I:%M %p').lstrip('0')
+    if delta_days < 7:
+        return local_dt.strftime('%a')
+    if local_dt.year == now.year:
+        return local_dt.strftime('%b %d')
+    return local_dt.strftime('%b %d, %Y')
+
 def create_app():
     app = Flask(__name__, template_folder='templates', static_folder='static')
     app.config.from_object(Config)
     app.jinja_env.filters['datetime'] = format_datetime
+    app.jinja_env.filters['short_date'] = format_short_date
 
     @app.context_processor
     def inject_globals():

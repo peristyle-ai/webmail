@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{% if is_search %}Search: {{ search_query }}{% else %}Inbox{% endif %} - PyPG Mail{% endblock %}
+{% block title %}{% if is_search %}Search: {{ search_query }}{% else %}{{ current_folder }}{% endif %} - PyPG Mail{% endblock %}
 
 {% block content %}
 <div class="p-3 sm:p-6 pb-20 md:pb-6">
@@ -10,25 +10,45 @@
             {% if is_search %}
                 Search: "{{ search_query }}"
             {% else %}
-                {% if current_folder == 'Sent' %}Sent{% elif current_folder == 'Drafts' %}Drafts{% elif current_folder == 'Trash' %}Trash{% else %}Inbox{% endif %}
+                {{ current_folder }}
             {% endif %}
         </h1>
-        <div class="text-dark-muted text-xs sm:text-sm flex-shrink-0">
-            {% if total > 0 %}
-                {{ (page - 1) * limit + 1 }}-{{ [page * limit, total] | min }} of {{ total }}
-            {% else %}
-                No emails
+        <div class="flex items-center gap-3 flex-shrink-0">
+            {% if not is_search and current_folder != 'Drafts' %}
+            <!-- View toggle: Gmail-style threads (default) vs legacy email rows -->
+            <div class="hidden sm:inline-flex rounded-lg border border-dark-border overflow-hidden text-xs">
+                <a href="?{% if current_folder %}folder={{ current_folder }}{% endif %}"
+                   class="px-2 py-1 {% if view == 'threads' %}bg-dark-accent text-white{% else %}text-dark-muted hover:text-dark-text{% endif %}">
+                    <i class="fas fa-comments mr-1"></i>Threads
+                </a>
+                <a href="?{% if current_folder %}folder={{ current_folder }}{% endif %}&view=emails"
+                   class="px-2 py-1 {% if view == 'emails' %}bg-dark-accent text-white{% else %}text-dark-muted hover:text-dark-text{% endif %}">
+                    <i class="fas fa-envelope mr-1"></i>Emails
+                </a>
+            </div>
             {% endif %}
+            <span class="text-dark-muted text-xs sm:text-sm">
+                {% if total > 0 %}
+                    {{ (page - 1) * limit + 1 }}-{{ [page * limit, total] | min }} of {{ total }}
+                {% else %}
+                    No {% if view == 'threads' %}threads{% else %}emails{% endif %}
+                {% endif %}
+            </span>
         </div>
     </div>
 
-    <!-- Bulk Actions Bar -->
-    <input type="hidden" name="email_ids" id="selected-ids">
+    <!-- Bulk Actions Bar (threads: mark read; emails: full set) -->
+    <input type="hidden" name="row_ids" id="selected-ids">
 
     <div id="bulk-actions" class="hidden mb-3 bg-dark-accent/20 border border-dark-accent/30 rounded-lg px-3 py-2 sm:px-4 sm:py-3">
         <div class="flex items-center justify-between flex-wrap gap-2">
             <span id="selected-count" class="text-sm text-dark-text">0 selected</span>
             <div class="flex items-center gap-2 flex-wrap">
+                {% if view == 'threads' %}
+                <button id="bulk-read-btn" class="bg-dark-accent hover:bg-dark-accentHover text-white px-3 py-1.5 rounded text-sm">
+                    <i class="fas fa-envelope-open mr-1"></i> Mark read
+                </button>
+                {% else %}
                 <select id="bulk-folder-select" class="px-2 py-1.5 bg-dark-card border border-dark-border rounded text-sm text-dark-text">
                     <option value="">Move to...</option>
                     {% for folder in folders %}
@@ -47,90 +67,30 @@
                 <button id="block-domain-btn" class="bg-orange-800 hover:bg-orange-900 text-white px-3 py-1.5 rounded text-sm hidden sm:inline-flex">
                     <i class="fas fa-globe mr-1"></i> Block Domain
                 </button>
+                {% endif %}
             </div>
         </div>
     </div>
 
-    <!-- Email List -->
+    <!-- Row list -->
     <div class="bg-dark-card border border-dark-border rounded-lg overflow-hidden">
-        {% if emails %}
-            <!-- Select all -->
-            <div class="px-3 py-2 border-b border-dark-border bg-dark-hover/50 flex items-center">
-                <input type="checkbox" id="select-all" class="w-4 h-4 text-dark-accent rounded mr-3 bg-dark-bg border-dark-border">
-                <span class="text-sm text-dark-muted">Select all</span>
-            </div>
+        {% if view == 'threads' %}
+            {% include 'partials/_thread_rows.html' %}
+        {% else %}
+            {% include 'partials/_email_rows.html' %}
+        {% endif %}
 
-            <div class="divide-y divide-dark-border">
-                {% for email in emails %}
-                <div class="email-row flex items-center px-3 py-3 sm:px-4 sm:py-3 cursor-pointer {% if not email.is_read %}email-unread bg-dark-accent/5{% endif %}">
-                    <!-- Checkbox -->
-                    <input type="checkbox" name="email_select" value="{{ email.id }}" class="email-checkbox w-4 h-4 text-dark-accent rounded mr-3 flex-shrink-0 bg-dark-bg border-dark-border">
-
-                    <!-- Star -->
-                    <form action="{{ url_for('emails.toggle_star', email_id=email.id) }}" method="post" class="mr-2 flex-shrink-0">
-                        <button type="submit" class="text-lg {% if email.is_starred %}text-yellow-400{% else %}text-dark-muted hover:text-dark-text{% endif %}">
-                            <i class="{% if email.is_starred %}fas{% else %}far{% endif %} fa-star"></i>
-                        </button>
-                    </form>
-
-                    <!-- Email Link -->
-                    <a href="{{ url_for('emails.email_detail', email_id=email.id) }}" class="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center">
-                        <!-- Sender & Subject (mobile: stacked) -->
-                        <div class="min-w-0 flex-1">
-                            <div class="flex items-center gap-2">
-                                <span class="truncate text-dark-text text-sm {% if not email.is_read %}font-semibold{% endif %}">
-                                    {% if email.sender %}
-                                        {{ email.sender.email }}
-                                    {% else %}
-                                        Unknown
-                                    {% endif %}
-                                </span>
-                                <span class="text-dark-muted text-xs flex-shrink-0 sm:hidden">
-                                    {{ email.created_at|datetime }}
-                                </span>
-                            </div>
-                            <div class="truncate text-sm {% if not email.is_read %}font-semibold text-dark-text{% else %}text-dark-muted{% endif %} flex items-center gap-1.5">
-                                {% if email.thread_id %}
-                                <a href="{{ url_for('emails.thread_detail', thread_id=email.thread_id) }}"
-                                   onclick="event.stopPropagation(); event.preventDefault(); window.location.href=this.href;"
-                                   class="inline-flex items-center text-dark-accent hover:text-dark-accentHover flex-shrink-0"
-                                   title="View thread">
-                                    <i class="fas fa-comments text-xs"></i>
-                                </a>
-                                {% endif %}
-                                <span class="truncate">{{ email.subject or '(No subject)' }}</span>
-                            </div>
-                            <div class="truncate text-xs text-dark-muted hidden sm:block">
-                                {{ email.body[:80] if email.body else '' }}
-                            </div>
-                        </div>
-
-                        <!-- Date (desktop) -->
-                        <div class="text-dark-muted text-xs whitespace-nowrap flex-shrink-0 ml-2 hidden sm:block">
-                            {{ email.created_at|datetime }}
-                        </div>
-                    </a>
-
-                    <!-- Actions (desktop hover) -->
-                    <div class="ml-2 hidden sm:flex items-center space-x-1 opacity-0 hover:opacity-100 transition-opacity">
-                        <form action="{{ url_for('emails.delete_email', email_id=email.id) }}" method="post"
-                              onsubmit="return confirm('Delete this email?')">
-                            <button type="submit" class="text-dark-muted hover:text-red-400 p-1">
-                                <i class="fas fa-trash text-sm"></i>
-                            </button>
-                        </form>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-
-            <!-- Pagination -->
-            {% if total > limit %}
-            <div class="px-3 py-3 border-t border-dark-border flex items-center justify-between text-sm">
+        <!-- Pagination -->
+        {% if total > limit %}
+        <div class="flex items-center justify-between px-3 py-2 sm:px-4 sm:py-3 border-t border-dark-border bg-dark-hover/40">
+            <span class="text-dark-muted text-xs sm:text-sm">
+                {{ (page - 1) * limit + 1 }}-{{ [page * limit, total] | min }} of {{ total }}
+            </span>
+            <div class="flex items-center gap-2 text-sm">
                 {% if page > 1 %}
-                    <a href="?{% if current_folder %}folder={{ current_folder }}&{% endif %}{% if is_search %}q={{ search_query }}&{% endif %}page={{ page - 1 }}"
+                    <a href="?{% if current_folder %}folder={{ current_folder }}{% endif %}{% if view == 'emails' %}&view=emails{% endif %}page={{ page - 1 }}"
                        class="text-dark-accent hover:text-dark-accentHover">
-                        <i class="fas fa-chevron-left mr-1"></i> Prev
+                        <i class="fas fa-chevron-left mr-1"></i>Prev
                     </a>
                 {% else %}
                     <span></span>
@@ -139,7 +99,7 @@
                 <span class="text-dark-muted">{{ page }} / {{ ((total - 1) / limit) | int + 1 }}</span>
 
                 {% if page * limit < total %}
-                    <a href="?{% if current_folder %}folder={{ current_folder }}&{% endif %}{% if is_search %}q={{ search_query }}&{% endif %}page={{ page + 1 }}"
+                    <a href="?{% if current_folder %}folder={{ current_folder }}{% endif %}{% if view == 'emails' %}&view=emails{% endif %}page={{ page + 1 }}"
                        class="text-dark-accent hover:text-dark-accentHover">
                         Next <i class="fas fa-chevron-right ml-1"></i>
                     </a>
@@ -147,12 +107,7 @@
                     <span></span>
                 {% endif %}
             </div>
-            {% endif %}
-        {% else %}
-            <div class="p-8 text-center text-dark-muted">
-                <i class="fas fa-inbox text-4xl sm:text-6xl mb-4 text-dark-hover"></i>
-                <p class="text-base sm:text-lg">{% if is_search %}No emails match your search.{% else %}Your inbox is empty.{% endif %}</p>
-            </div>
+        </div>
         {% endif %}
     </div>
 </div>
@@ -160,13 +115,11 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const selectAll = document.getElementById('select-all');
-    const checkboxes = document.querySelectorAll('.email-checkbox');
+    const checkboxes = document.querySelectorAll('.row-checkbox');
     const bulkActions = document.getElementById('bulk-actions');
     const selectedCount = document.getElementById('selected-count');
     const selectedIds = document.getElementById('selected-ids');
-    const bulkDeleteBtn = document.getElementById('bulk-delete-btn');
-    const blockSenderBtn = document.getElementById('block-sender-btn');
-    const blockDomainBtn = document.getElementById('block-domain-btn');
+    const view = {{ view | tojson }};
 
     function updateBulkActions() {
         const selected = Array.from(checkboxes).filter(c => c.checked);
@@ -183,29 +136,63 @@ document.addEventListener('DOMContentLoaded', function() {
     function performBulkAction(action, confirmMsg) {
         const selected = Array.from(checkboxes).filter(c => c.checked);
         if (selected.length === 0) return;
-        if (!confirm(confirmMsg + selected.length + ' email(s)?')) return;
+        if (!confirm(confirmMsg + selected.length + (view === 'threads' ? ' thread(s)?' : ' email(s)?'))) return;
 
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = action;
-        form.innerHTML = '<input type="hidden" name="email_ids" value="' + selectedIds.value + '">';
+        form.innerHTML = '<input type="hidden" name="ids" value="' + selectedIds.value + '">';
         document.body.appendChild(form);
         form.submit();
     }
 
-    selectAll.addEventListener('change', function() {
-        checkboxes.forEach(cb => cb.checked = this.checked);
-        updateBulkActions();
-    });
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            checkboxes.forEach(cb => cb.checked = this.checked);
+            updateBulkActions();
+        });
+    }
 
     checkboxes.forEach(cb => {
         cb.addEventListener('change', updateBulkActions);
     });
 
-    bulkDeleteBtn.addEventListener('click', function() {
-        performBulkAction("{{ url_for('emails.bulk_delete') }}", 'Delete ');
-    });
+    {% if view == 'threads' %}
+    // Thread view: bulk mark-read via /api/threads/<id>/read
+    const bulkReadBtn = document.getElementById('bulk-read-btn');
+    if (bulkReadBtn) {
+        bulkReadBtn.addEventListener('click', async function() {
+            const ids = (selectedIds.value || '').split(',').filter(Boolean);
+            if (ids.length === 0) return;
+            if (!confirm('Mark ' + ids.length + ' thread(s) as read?')) return;
 
+            const results = await Promise.allSettled(ids.map(id =>
+                fetch('/threads/' + encodeURIComponent(id) + '/read', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                }).then(r => r.ok ? r : Promise.reject(r.status))
+            ));
+            const ok = results.filter(r => r.status === 'fulfilled').length;
+            const failed = ids.length - ok;
+            if (failed === 0) {
+                window.location.reload();
+            } else {
+                alert('Marked ' + ok + ' as read, ' + failed + ' failed.');
+                window.location.reload();
+            }
+        });
+    }
+    {% else %}
+    // Email view: bulk delete/move/block-sender/block-domain (existing routes)
+    const bulkDeleteBtn = document.getElementById('bulk-delete-btn');
+    const blockSenderBtn = document.getElementById('block-sender-btn');
+    const blockDomainBtn = document.getElementById('block-domain-btn');
+
+    if (bulkDeleteBtn) {
+        bulkDeleteBtn.addEventListener('click', function() {
+            performBulkAction("{{ url_for('emails.bulk_delete') }}", 'Delete ');
+        });
+    }
     if (blockSenderBtn) {
         blockSenderBtn.addEventListener('click', function() {
             performBulkAction("{{ url_for('emails.bulk_block_sender') }}", 'Block sender for ');
@@ -217,20 +204,24 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    document.getElementById('bulk-move-btn').addEventListener('click', function() {
-        const selected = Array.from(checkboxes).filter(c => c.checked);
-        if (selected.length === 0) { alert('Please select emails to move'); return; }
-        const folderId = document.getElementById('bulk-folder-select').value;
-        if (!folderId) { alert('Please select a folder'); return; }
+    const bulkMoveBtn = document.getElementById('bulk-move-btn');
+    if (bulkMoveBtn) {
+        bulkMoveBtn.addEventListener('click', function() {
+            const selected = Array.from(checkboxes).filter(c => c.checked);
+            if (selected.length === 0) { alert('Please select emails to move'); return; }
+            const folderId = document.getElementById('bulk-folder-select').value;
+            if (!folderId) { alert('Please select a folder'); return; }
 
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = "{{ url_for('emails.bulk_move') }}";
-        form.innerHTML = '<input type="hidden" name="email_ids" value="' + selectedIds.value + '">' +
-                         '<input type="hidden" name="folder_id" value="' + folderId + '">';
-        document.body.appendChild(form);
-        form.submit();
-    });
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = "{{ url_for('emails.bulk_move') }}";
+            form.innerHTML = '<input type="hidden" name="email_ids" value="' + selectedIds.value + '">' +
+                             '<input type="hidden" name="folder_id" value="' + folderId + '">';
+            document.body.appendChild(form);
+            form.submit();
+        });
+    }
+    {% endif %}
 });
 </script>
 {% endblock %}

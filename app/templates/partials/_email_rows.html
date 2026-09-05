@@ -1,0 +1,71 @@
+{# Per-email row layout (legacy, used by search).
+
+   Clean flex layout: checkbox | star | sender | subject + snippet | date.
+   Sender is left-aligned (was right-aligned in the previous version, which
+   was the layout bug visible in the screenshots).
+#}
+{% if emails %}
+<div class="px-3 py-2 border-b border-dark-border bg-dark-hover/50 flex items-center">
+    <input type="checkbox" id="select-all"
+           class="w-4 h-4 text-dark-accent rounded mr-3 bg-dark-bg border-dark-border">
+    <span class="text-sm text-dark-muted">Select all</span>
+</div>
+
+<div class="divide-y divide-dark-border">
+    {% for email in emails %}
+    <div class="email-row flex items-center gap-2 sm:gap-3 px-3 py-2 sm:px-4 sm:py-2.5
+                {% if not email.is_read %}bg-dark-accent/5{% endif %}
+                hover:bg-dark-hover/40 transition-colors">
+        <!-- Checkbox -->
+        <input type="checkbox" name="email_select" value="{{ email.id }}"
+               class="row-checkbox w-4 h-4 text-dark-accent rounded flex-shrink-0 bg-dark-bg border-dark-border"
+               onclick="event.stopPropagation()">
+
+        <!-- Star -->
+        <form action="{{ url_for('emails.toggle_star', email_id=email.id) }}" method="post"
+              class="flex-shrink-0" onclick="event.stopPropagation()">
+            <button type="submit"
+                    class="text-base {% if email.is_starred %}text-yellow-400{% else %}text-dark-muted hover:text-dark-text{% endif %}">
+                <i class="{% if email.is_starred %}fas{% else %}far{% endif %} fa-star"></i>
+            </button>
+        </form>
+
+        <!-- Clickable area -->
+        <a href="{{ url_for('emails.email_detail', email_id=email.id) }}"
+           class="flex-1 min-w-0 flex items-center gap-2 sm:gap-3">
+            <!-- Sender -->
+            <div class="hidden sm:block w-44 lg:w-52 flex-shrink-0 truncate
+                        {% if not email.is_read %}font-bold text-dark-text{% else %}text-dark-text{% endif %}">
+                {{ (email.sender.email if email.sender else 'Unknown') }}
+            </div>
+
+            <!-- Subject + snippet -->
+            <div class="flex-1 min-w-0 flex items-baseline gap-2">
+                {% if email.thread_id %}
+                <span class="text-dark-accent flex-shrink-0" title="In a thread">
+                    <i class="fas fa-comments text-xs"></i>
+                </span>
+                {% endif %}
+                <span class="truncate {% if not email.is_read %}font-bold text-dark-text{% else %}text-dark-text{% endif %}">
+                    {{ email.subject or '(No subject)' }}
+                </span>
+                <span class="hidden md:inline text-dark-muted text-sm truncate">
+                    - {{ (email.body[:80] if email.body else '') }}
+                </span>
+            </div>
+
+            <!-- Date -->
+            <div class="text-xs text-dark-muted flex-shrink-0 w-14 sm:w-20 text-right
+                        {% if not email.is_read %}font-semibold text-dark-text{% endif %}">
+                {{ email.created_at|short_date }}
+            </div>
+        </a>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="p-8 text-center text-dark-muted">
+    <i class="fas fa-inbox text-4xl sm:text-6xl mb-4 text-dark-hover"></i>
+    <p class="text-base sm:text-lg">{% if is_search %}No emails match your search.{% else %}Your inbox is empty.{% endif %}</p>
+</div>
+{% endif %}
