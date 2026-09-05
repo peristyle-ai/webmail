@@ -264,6 +264,56 @@ def email_detail(email_id):
         flash(str(e), 'error')
         return redirect(url_for('emails.inbox'))
 
+@emails_bp.route('/threads/<thread_id>')
+@require_auth
+def thread_detail(thread_id):
+    """Show all messages in a thread, in chronological order.
+
+    Backed by GET /api/threads/<id>/messages on the mail server (PR4 in
+    py_pg_email). The thread_id is a UUID assigned at email-capture time
+    (see PR3's compute_thread_id in py_pg_email/app/utils/emails.py).
+    """
+    try:
+        thread = api.get_thread_messages(session['token'], thread_id)
+
+        messages = thread.get('messages', []) if thread else []
+        for msg in messages:
+            if not msg.get('sender') and msg.get('headers'):
+                sender = extract_sender_from_headers(msg['headers'])
+                if sender:
+                    msg['sender'] = sender
+            if not msg.get('recipient') and msg.get('headers'):
+                recipient = extract_recipient_from_headers(msg['headers'])
+                if recipient:
+                    msg['recipient'] = recipient
+
+        return render_template(
+            'thread_detail.html',
+            thread_id=thread_id,
+            subject=thread.get('subject') if thread else None,
+            messages=messages,
+        )
+    except AuthenticationError:
+        session.clear()
+        flash('Session expired. Please log in again.', 'warning')
+        return redirect(url_for('auth.login'))
+    except APIError as e:
+        flash(str(e), 'error')
+        return redirect(url_for('emails.inbox'))
+
+@emails_bp.route('/threads/<thread_id>/read', methods=['POST'])
+@require_auth
+def mark_thread_read(thread_id):
+    """Mark every message in a thread as read."""
+    try:
+        api.mark_thread_read(session['token'], thread_id)
+        return jsonify({'status': 'ok'}), 200
+    except AuthenticationError:
+        session.clear()
+        return jsonify({'error': 'unauthenticated'}), 401
+    except APIError as e:
+        return jsonify({'error': str(e)}), 500
+
 @emails_bp.route('/attachments/<int:attachment_id>')
 @require_auth
 def download_attachment(attachment_id):

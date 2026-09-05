@@ -222,10 +222,29 @@ if response.status_code == 401:
 
 ### Key Endpoints Used
 - `POST /auth/login` - Authentication
-- `GET/POST/DELETE /api/emails` - Email CRUD
+- `GET/POST/DELETE /api/emails` - Email CRUD (each row now includes `thread_id`, `message_id`, `in_reply_to`, `references_chain`, `subject_normalized` from py_pg_email PR1)
 - `GET/POST/DELETE /api/folders` - Folder management
 - `GET /api/search` - Search
 - `GET/DELETE /api/blacklist/ip` - Blacklist management
+- `GET /api/threads` - List collapsed thread summaries (subject, message_count, unread_count, last_sender, participants, folders). Query params: `folder`, `limit`, `offset`, `q`.
+- `GET /api/threads/<uuid>/messages` - All messages in a thread, chronological order. Returns `{thread_id, subject, messages: [...]}`.
+- `POST /api/threads/<uuid>/read` - Mark every message in a thread as read.
+- `GET /api/emails?thread=<uuid>` - Filter any /api/emails listing by thread_id.
+
+### Threading UI (added 2026-09-05)
+
+The inbox is **not** thread-grouped by default (existing email-row layout
+preserved). Each email row shows a small 💬 icon if it belongs to a thread,
+linking to the thread view. The email_detail page shows a "View full thread"
+banner when the email has a `thread_id`. The thread view (`/threads/<uuid>`)
+shows every message in the thread in chronological order, with per-message
+sandboxed iframes, "New" badges for unread messages, and a "Mark all read"
+button that calls `/api/threads/<uuid>/read`.
+
+Server-side threading logic lives in `py_pg_email/app/utils/emails.py`
+(`compute_thread_id`, `extract_threading_headers`, `normalize_subject`).
+See `~/git/py_pg_email/coding_agent/plan_threading.md` for the threading
+algorithm details (References chain → In-Reply-To walk → subject fallback).
 
 ## Dependencies
 ```

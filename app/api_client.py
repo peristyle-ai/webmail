@@ -224,6 +224,38 @@ class MailServerAPI:
         """Get email delivery status"""
         return self._make_request('GET', f'/api/emails/{email_id}/delivery-status', token)
 
+    # Threads (RFC 2822 threading; see PR1+PR4 in py_pg_email)
+    def get_threads(self, token, folder=None, page=1, limit=50, q=None):
+        """List collapsed thread summaries for the current user.
+
+        Returns a dict with keys: threads (list), total, limit, offset.
+        Each thread has thread_id, subject, preview, message_count,
+        unread_count, last_message_at, last_sender, participants, folders.
+        """
+        params = {'page': page, 'limit': limit}
+        if folder:
+            params['folder'] = folder
+        if q:
+            params['q'] = q
+        return self._make_request('GET', '/api/threads', token, params=params)
+
+    def get_thread_messages(self, token, thread_id):
+        """Return every message in a thread, in chronological order.
+
+        Returns a dict with keys: thread_id, subject, messages (list).
+        Each message has id, message_id, in_reply_to, sender, recipient,
+        folder, subject, body, html, is_read, is_starred, created_at.
+        """
+        return self._make_request(
+            'GET', f'/api/threads/{thread_id}/messages', token
+        )
+
+    def mark_thread_read(self, token, thread_id):
+        """Mark every message in a thread as read."""
+        return self._make_request(
+            'POST', f'/api/threads/{thread_id}/read', token, json={}
+        )
+
 def require_auth(f):
     """Decorator to require authentication"""
     @wraps(f)

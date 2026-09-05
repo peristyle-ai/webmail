@@ -89,8 +89,16 @@
                                     {{ email.created_at|datetime }}
                                 </span>
                             </div>
-                            <div class="truncate text-sm {% if not email.is_read %}font-semibold text-dark-text{% else %}text-dark-muted{% endif %}">
-                                {{ email.subject or '(No subject)' }}
+                            <div class="truncate text-sm {% if not email.is_read %}font-semibold text-dark-text{% else %}text-dark-muted{% endif %} flex items-center gap-1.5">
+                                {% if email.thread_id %}
+                                <a href="{{ url_for('emails.thread_detail', thread_id=email.thread_id) }}"
+                                   onclick="event.stopPropagation(); event.preventDefault(); window.location.href=this.href;"
+                                   class="inline-flex items-center text-dark-accent hover:text-dark-accentHover flex-shrink-0"
+                                   title="View thread">
+                                    <i class="fas fa-comments text-xs"></i>
+                                </a>
+                                {% endif %}
+                                <span class="truncate">{{ email.subject or '(No subject)' }}</span>
                             </div>
                             <div class="truncate text-xs text-dark-muted hidden sm:block">
                                 {{ email.body[:80] if email.body else '' }}

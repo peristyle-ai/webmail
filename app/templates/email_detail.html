@@ -84,6 +84,18 @@
     <div class="mb-4">
         <h1 class="text-lg sm:text-2xl font-bold text-dark-text mb-3">{{ email.subject or '(No subject)' }}</h1>
 
+        {% if email.thread_id %}
+        <a href="{{ url_for('emails.thread_detail', thread_id=email.thread_id) }}"
+           class="inline-flex items-center gap-2 mb-3 px-3 py-1.5 bg-dark-accent/15 border border-dark-accent/30
+                  rounded-lg text-sm text-dark-accent hover:bg-dark-accent/25 transition-colors">
+            <i class="fas fa-comments"></i>
+            <span>View full thread</span>
+            {% if email.in_reply_to %}
+            <span class="text-dark-muted text-xs">— in reply to another message</span>
+            {% endif %}
+        </a>
+        {% endif %}
+
         <div class="flex items-start gap-3">
             <div class="w-10 h-10 bg-dark-accent rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                 {{ email.sender.email[0].upper() if email.sender and email.sender.email else '?' }}

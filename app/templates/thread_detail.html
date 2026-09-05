@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}{{ subject or 'Thread' }} - PyPG Mail{% endblock %}
+
+{% block content %}
+<div class="p-3 sm:p-6 pb-20 md:pb-6">
+    <!-- Back + header -->
+    <div class="flex items-center gap-2 mb-4 pb-3 border-b border-dark-border">
+        <a href="{{ url_for('emails.inbox') }}"
+           class="text-dark-accent hover:text-dark-accentHover flex-shrink-0 text-sm">
+            <i class="fas fa-arrow-left mr-1"></i>Back to Inbox
+        </a>
+        <div class="flex-1"></div>
+        <button id="mark-thread-read-btn"
+                class="px-3 py-1.5 bg-dark-hover rounded-lg hover:bg-dark-border text-sm text-dark-text flex-shrink-0">
+            <i class="fas fa-envelope-open mr-1"></i><span class="hidden sm:inline">Mark all read</span>
+        </button>
+    </div>
+
+    <!-- Thread summary -->
+    <div class="mb-4">
+        <h1 class="text-lg sm:text-2xl font-bold text-dark-text mb-2">
+            {{ subject or '(No subject)' }}
+        </h1>
+        <div class="flex items-center gap-3 text-xs text-dark-muted">
+            <span>
+                <i class="fas fa-comments mr-1"></i>
+                {{ messages|length }} message{{ '' if messages|length == 1 else 's' }}
+            </span>
+            {% if messages %}
+            <span>
+                <i class="fas fa-clock mr-1"></i>
+                {{ messages[0].created_at|datetime }} – {{ messages[-1].created_at|datetime }}
+            </span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Messages in chronological order -->
+    <div class="space-y-4">
+        {% for msg in messages %}
+        <div class="bg-dark-card border border-dark-border rounded-lg overflow-hidden
+                    {% if not msg.is_read %}border-dark-accent/50{% endif %}"
+             id="message-{{ msg.id }}">
+            <!-- Per-message header -->
+            <div class="px-3 py-2 sm:px-4 sm:py-3 bg-dark-hover/40 border-b border-dark-border
+                        flex items-start gap-3">
+                <div class="w-9 h-9 bg-dark-accent rounded-full flex items-center justify-center
+                            text-white font-bold text-xs flex-shrink-0">
+                    {{ (msg.sender.email[0] if msg.sender and msg.sender.email else '?')|upper }}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="min-w-0">
+                            <div class="font-semibold text-dark-text text-sm truncate
+                                        {% if not msg.is_read %}font-bold{% endif %}">
+                                {{ (msg.sender.email if msg.sender else 'Unknown') }}
+                                {% if not msg.is_read %}
+                                <span class="ml-1 px-1.5 py-0.5 bg-dark-accent text-white text-[10px]
+                                             rounded uppercase tracking-wide">New</span>
+                                {% endif %}
+                            </div>
+                            {% if msg.recipient %}
+                            <div class="text-xs text-dark-muted truncate">
+                                To: {{ msg.recipient.email }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="flex items-center gap-2 flex-shrink-0">
+                            <span class="text-xs text-dark-muted">{{ msg.created_at|datetime }}</span>
+                            <a href="{{ url_for('emails.email_detail', email_id=msg.id) }}"
+                               class="text-xs text-dark-accent hover:text-dark-accentHover"
+                               title="Open single-message view">
+                                <i class="fas fa-external-link-alt"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Per-message body (same iframe sandboxing as email_detail.html) -->
+            {% set msg_content = msg.html if msg.html else msg.body if msg.body else '<p style="color: #94a3b8;">(No content)</p>' %}
+            <iframe id="thread-frame-{{ msg.id }}"
+                    sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+                    class="w-full bg-dark-card"
+                    style="min-height: 160px; border: none;"></iframe>
+
+            <script>
+            (function(frameId, rawContent) {
+                var iframe = document.getElementById(frameId);
+                if (!iframe) return;
+                var content = rawContent.trim();
+                var headerEnd = content.indexOf('\n\n');
+                if (headerEnd > 0 && headerEnd < 500) {
+                    var beforeBlank = content.substring(0, headerEnd);
+                    var headerLines = beforeBlank.split('\n');
+                    if (headerLines.length >= 2 && /^From:\s/i.test(headerLines[0])) {
+                        content = content.substring(headerEnd + 2);
+                    }
+                }
+                var displayContent = content;
+                var doc = '<!DOCTYPE html><html><head><meta charset="utf-8">' +
+                    '<style>' +
+                    'html, body { margin: 0; padding: 12px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; font-size: 14px; background: #1e293b; color: #e2e8f0; word-wrap: break-word; }' +
+                    'a { color: #818cf8; }' +
+                    'img { max-width: 100%; height: auto; }' +
+                    'blockquote { border-left: 3px solid #334155; margin-left: 0; padding-left: 12px; color: #94a3b8; }' +
+                    'pre, code { background: #0f172a; color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: monospace; }' +
+                    '</style></head><body>' + displayContent + '</body></html>';
+                iframe.srcdoc = doc;
+                iframe.addEventListener('load', function() {
+                    try {
+                        var h = iframe.contentDocument.body.scrollHeight;
+                        iframe.style.height = Math.max(160, Math.min(h + 24, 2000)) + 'px';
+                    } catch (e) {}
+                });
+            })('thread-frame-{{ msg.id }}', {{ msg_content | tojson }});
+            </script>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+document.getElementById('mark-thread-read-btn')?.addEventListener('click', async function() {
+    try {
+        var resp = await fetch('{{ url_for("emails.mark_thread_read", thread_id=thread_id) }}', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+        });
+        if (resp.ok) {
+            document.querySelectorAll('[id^="message-"]').forEach(function(el) {
+                el.classList.remove('border-dark-accent/50');
+                var newBadge = el.querySelector('.bg-dark-accent.text-white');
+                if (newBadge) newBadge.remove();
+            });
+        }
+    } catch (e) {
+        console.error('mark_thread_read failed', e);
+    }
+});
+</script>
+{% endblock %}
