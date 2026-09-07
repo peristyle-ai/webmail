@@ -73,11 +73,42 @@ def format_short_date(value):
         return local_dt.strftime('%b %d')
     return local_dt.strftime('%b %d, %Y')
 
+def format_compact(value):
+    """Compact `YYYY-MM-DD HH:MM` (24h, integer minutes, no seconds, no microseconds)."""
+    if not value:
+        return ''
+    s = value.strip()
+    # Strip microseconds before parsing: %z doesn't tolerate fractional seconds
+    if '.' in s:
+        head, _, tail = s.partition('.')
+        cut = 0
+        while cut < len(tail) and tail[cut].isdigit():
+            cut += 1
+        s = head + tail[cut:]
+    # Try the common formats the API may return
+    for fmt in ('%Y-%m-%dT%H:%M:%S%z', '%Y-%m-%dT%H:%M:%S', '%Y-%m-%d %H:%M:%S', '%a, %d %b %Y %H:%M:%S %Z'):
+        try:
+            dt = datetime.strptime(s, fmt)
+            break
+        except ValueError:
+            continue
+    else:
+        return value
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    try:
+        dt = dt.astimezone(ZoneInfo(session.get('user', {}).get('timezone', 'Australia/Sydney')))
+    except Exception:
+        pass
+    return dt.strftime('%Y-%m-%d %H:%M')
+
+
 def create_app():
     app = Flask(__name__, template_folder='templates', static_folder='static')
     app.config.from_object(Config)
     app.jinja_env.filters['datetime'] = format_datetime
     app.jinja_env.filters['short_date'] = format_short_date
+    app.jinja_env.filters['compact'] = format_compact
 
     @app.context_processor
     def inject_globals():
