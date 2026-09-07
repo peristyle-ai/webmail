@@ -343,6 +343,15 @@ def thread_detail(thread_id):
                 recipient = extract_recipient_from_headers(msg['headers'])
                 if recipient:
                     msg['recipient'] = recipient
+            # Fetch attachments per message (best-effort — don't fail the whole thread view)
+            try:
+                att_data = api.get_attachments(session['token'], msg['id'])
+                if isinstance(att_data, list):
+                    msg['attachments'] = att_data
+                else:
+                    msg['attachments'] = []
+            except APIError:
+                msg['attachments'] = []
 
         folders_data = api.get_folders(session['token'])
         if isinstance(folders_data, dict):
