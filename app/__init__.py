@@ -1,4 +1,5 @@
 import os
+import psycopg2
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 from flask import Flask, send_from_directory, session
@@ -116,7 +117,18 @@ def create_app():
 
     # Initialize database
     from app.db import init_db
-    init_db()
+    # Schema-init helper needs DDL privileges. Runtime role `py_pg_client_external`
+    # doesn't have CREATE on schema public; tolerate InsufficientPrivilege.
+    # Tables (domain_whitelist, sender_blocklist, user_preferences) are
+    # pre-created by the privileged bootstrap step.
+    try:
+        init_db()
+    except psycopg2.errors.InsufficientPrivilege:
+        import logging
+        logging.getLogger(__name__).warning(
+            "init_db() skipped (InsufficientPrivilege — schema was set up by "
+            "a privileged session; runtime role has DML only)"
+        )
 
     # Serve service worker at root for PWA scope
     @app.route('/sw.js')
