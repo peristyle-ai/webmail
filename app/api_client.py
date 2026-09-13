@@ -1,7 +1,22 @@
 import requests
+import os
 from flask import session, redirect, url_for, flash
 from functools import wraps
 from config import Config
+
+# Path to the mail server's TLS certificate for verifying self-signed certs.
+# Set to 'False' to disable verification (not recommended), or a path to a CA bundle.
+_TLS_VERIFY = os.environ.get('MAIL_SERVER_TLS_VERIFY', '')
+if _TLS_VERIFY.lower() in ('false', '0', 'no'):
+    _TLS_VERIFY = False
+elif not _TLS_VERIFY:
+    # Default: look for the cert alongside the mail server
+    _default_cert = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                                 '..', 'py_pg_email', 'certs', 'server.crt')
+    if os.path.exists(_default_cert):
+        _TLS_VERIFY = _default_cert
+    else:
+        _TLS_VERIFY = True  # Fall back to system CA bundle
 
 class AuthenticationError(Exception):
     pass
@@ -24,7 +39,7 @@ class MailServerAPI:
         url = f"{self.base_url}{endpoint}"
         
         try:
-            response = requests.request(method, url, headers=headers, **kwargs)
+            response = requests.request(method, url, headers=headers, verify=_TLS_VERIFY, **kwargs)
             
             if response.status_code == 401:
                 raise AuthenticationError("Invalid or expired token")
@@ -43,7 +58,8 @@ class MailServerAPI:
         """Authenticate user and return JWT token"""
         response = requests.post(
             f"{self.base_url}/auth/login",
-            json={'email': email, 'password': password}
+            json={'email': email, 'password': password},
+            verify=_TLS_VERIFY,
         )
         
         if response.status_code == 200:
@@ -73,7 +89,7 @@ class MailServerAPI:
     def download_attachment(self, token, attachment_id):
         """Download attachment content and metadata."""
         headers = {'Authorization': f'Bearer {token}'}
-        response = requests.get(f'{self.base_url}/api/attachments/{attachment_id}', headers=headers)
+        response = requests.get(f'{self.base_url}/api/attachments/{attachment_id}', headers=headers, verify=_TLS_VERIFY)
 
         if response.status_code == 401:
             raise AuthenticationError("Invalid or expired token")
@@ -110,7 +126,7 @@ class MailServerAPI:
         headers = {'Authorization': f'Bearer {token}'}
         files = {'file': (file_storage.filename, file_storage.stream, file_storage.content_type)}
         url = f'{self.base_url}/api/emails/{email_id}/attachments'
-        response = requests.post(url, headers=headers, files=files)
+        response = requests.post(url, headers=headers, files=files, verify=_TLS_VERIFY)
         if response.status_code == 401:
             raise AuthenticationError("Invalid or expired token")
         response.raise_for_status()
@@ -128,7 +144,7 @@ class MailServerAPI:
             )
         }
         url = f'{self.base_url}/api/emails/{target_email_id}/attachments'
-        response = requests.post(url, headers=headers, files=files)
+        response = requests.post(url, headers=headers, files=files, verify=_TLS_VERIFY)
         if response.status_code == 401:
             raise AuthenticationError("Invalid or expired token")
         response.raise_for_status()

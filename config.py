@@ -4,7 +4,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Config:
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
+    SECRET_KEY = os.environ.get('SECRET_KEY')
+    if not SECRET_KEY:
+        raise RuntimeError("SECRET_KEY environment variable is required. Set it in .env")
     
     # Mail Server API
     MAIL_SERVER_API_URL = os.environ.get('MAIL_SERVER_API_URL') or 'http://localhost:5003'

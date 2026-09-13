@@ -21,6 +21,7 @@ from __future__ import annotations
 from flask import Blueprint, request, Response, session
 
 from config import Config
+from app.api_client import _TLS_VERIFY
 
 api_proxy_bp = Blueprint('api_proxy', __name__, url_prefix='/api')
 
@@ -89,6 +90,7 @@ def proxy(api_path: str):
             data=data,
             allow_redirects=False,
             timeout=30,
+            verify=_TLS_VERIFY,
         )
     except requests.exceptions.RequestException as exc:
         return Response(
