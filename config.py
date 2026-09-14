@@ -21,6 +21,6 @@ class Config:
     
     # Session
     PERMANENT_SESSION_LIFETIME = 86400  # 24 hours, matching JWT token
-    SESSION_COOKIE_SECURE = False  # Set to True in production with HTTPS
+    SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'True').lower() == 'true'
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
