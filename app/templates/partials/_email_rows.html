@@ -24,6 +24,7 @@
         <!-- Star -->
         <form action="{{ url_for('emails.toggle_star', email_id=email.id) }}" method="post"
               class="flex-shrink-0" onclick="event.stopPropagation()">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit"
                     class="text-base {% if email.is_starred %}text-yellow-400{% else %}text-dark-muted hover:text-dark-text{% endif %}">
                 <i class="{% if email.is_starred %}fas{% else %}far{% endif %} fa-star"></i>

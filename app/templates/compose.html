@@ -14,6 +14,7 @@
 
     <!-- Compose Form -->
     <form method="post" action="{{ url_for('emails.compose') }}" enctype="multipart/form-data" class="space-y-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         {% if forward_email_id %}
         <input type="hidden" name="forward_email_id" value="{{ forward_email_id }}">
         {% endif %}

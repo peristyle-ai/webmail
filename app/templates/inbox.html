@@ -151,7 +151,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = action;
-        form.innerHTML = '<input type="hidden" name="ids" value="' + selectedIds.value + '">';
+        form.innerHTML = '<input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="ids" value="' + selectedIds.value + '">';
         document.body.appendChild(form);
         form.submit();
     }
@@ -236,7 +236,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = action;
-        let html = '<input type="hidden" name="email_ids" value="' + emailIds.join(',') + '">';
+        let html = '<input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="email_ids" value="' + emailIds.join(',') + '">';
         if (extraFields) {
             for (const [k, v] of Object.entries(extraFields)) {
                 html += '<input type="hidden" name="' + k + '" value="' + v + '">';
@@ -259,7 +259,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const results = await Promise.allSettled(ids.map(id =>
                 fetch('/threads/' + encodeURIComponent(id) + '/read', {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
+                    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}'},
                 }).then(r => r.ok ? r : Promise.reject(r.status))
             ));
             const ok = results.filter(r => r.status === 'fulfilled').length;

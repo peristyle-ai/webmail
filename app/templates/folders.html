@@ -15,6 +15,7 @@
     <div class="bg-dark-card border border-dark-border rounded-lg p-6 mb-6">
         <h2 class="text-lg font-semibold text-dark-text mb-4">Create New Folder</h2>
         <form action="{{ url_for('folders.create_folder') }}" method="post" class="flex gap-4">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="text" name="name" placeholder="Folder name" required
                    class="flex-1 px-4 py-2 bg-dark-bg border border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-accent text-dark-text placeholder-dark-muted">
             <button type="submit" class="px-6 py-2 bg-dark-accent text-white rounded-lg hover:bg-dark-accentHover">
@@ -56,6 +57,7 @@
                         {% if folder.id > 4 %}
                         <form action="{{ url_for('folders.delete_folder', folder_id=folder.id) }}" method="post"
                               onsubmit="return confirm('Delete this folder? Emails will not be deleted.')" class="inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="px-4 py-2 text-red-400 hover:bg-red-900/30 rounded-lg">
                                 <i class="fas fa-trash"></i>
                             </button>

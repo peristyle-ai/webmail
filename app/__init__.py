@@ -3,6 +3,7 @@ import psycopg2
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 from flask import Flask, send_from_directory, session
+from flask_wtf.csrf import CSRFProtect
 from config import Config
 
 def format_datetime(value):
@@ -111,6 +112,9 @@ def create_app():
     app.jinja_env.filters['short_date'] = format_short_date
     app.jinja_env.filters['compact'] = format_compact
 
+    # CSRF protection for all POST/PUT/PATCH/DELETE forms
+    csrf = CSRFProtect(app)
+
     @app.context_processor
     def inject_globals():
         return dict(folders=[], current_folder=session.get('current_folder', 'Inbox'))
@@ -152,6 +156,10 @@ def create_app():
     app.register_blueprint(blacklist_bp)
     app.register_blueprint(blocklist_bp)
     app.register_blueprint(api_proxy_bp)
+    
+    # API proxy is a same-origin pass-through to the mail server —
+    # CSRF doesn't apply (no form submission, JWT Bearer auth instead)
+    csrf.exempt(api_proxy_bp)
     
     # Register error handlers
     @app.errorhandler(404)

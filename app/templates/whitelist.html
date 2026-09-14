@@ -15,6 +15,7 @@
     <div class="bg-dark-card border border-dark-border rounded-lg p-6 mb-6">
         <h2 class="text-lg font-semibold text-dark-text mb-4">Add Domain to Whitelist</h2>
         <form action="{{ url_for('whitelist.add_domain') }}" method="post" class="space-y-4">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="flex gap-4">
                 <input type="text" name="domain" placeholder="example.com" required
                        class="flex-1 px-4 py-2 bg-dark-bg border border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-accent text-dark-text placeholder-dark-muted">
@@ -58,6 +59,7 @@
                     
                     <form action="{{ url_for('whitelist.remove_domain', domain_id=domain.id) }}" method="post"
                           onsubmit="return confirm('Remove this domain from whitelist?')" class="inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="px-4 py-2 text-red-400 hover:bg-red-900/30 rounded-lg">
                             <i class="fas fa-trash"></i>
                         </button>

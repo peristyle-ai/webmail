@@ -122,6 +122,7 @@
                 </a>
 
                 <form action="{{ url_for('emails.toggle_star', email_id=msg.id) }}" method="post" class="inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit"
                             class="px-2 py-1 {% if msg.is_starred %}bg-yellow-600 text-dark-text{% else %}bg-dark-hover text-dark-text hover:bg-dark-border{% endif %} rounded text-xs"
                             title="{% if msg.is_starred %}Unstar{% else %}Star{% endif %}">
@@ -130,6 +131,7 @@
                 </form>
 
                 <form action="{{ url_for('emails.mark_read', email_id=msg.id) }}" method="post" class="inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit"
                             class="px-2 py-1 bg-dark-hover text-dark-text rounded hover:bg-dark-border text-xs"
                             title="Mark this message as read">
@@ -138,6 +140,7 @@
                 </form>
 
                 <form action="{{ url_for('emails.move_email', email_id=msg.id) }}" method="post" class="inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <select name="folder_id" onchange="this.form.submit()"
                             class="px-1.5 py-1 bg-dark-hover border border-dark-border rounded text-xs text-dark-text"
                             title="Move to folder">
@@ -152,6 +155,7 @@
 
                 <form action="{{ url_for('emails.delete_email', email_id=msg.id) }}" method="post" class="inline"
                       onsubmit="return confirm('Delete this message from the thread?')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit"
                             class="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs"
                             title="Delete this message">
@@ -161,6 +165,7 @@
 
                 <form action="{{ url_for('emails.block_sender', email_id=msg.id) }}" method="post" class="inline"
                       onsubmit="return confirm('Block this sender and delete the message?')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit"
                             class="px-2 py-1 bg-orange-600 text-white rounded hover:opacity-80 text-xs"
                             title="Block sender and delete">
@@ -170,6 +175,7 @@
 
                 <form action="{{ url_for('emails.block_domain', email_id=msg.id) }}" method="post" class="inline"
                       onsubmit="return confirm('Block entire domain and delete the message?')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit"
                             class="px-2 py-1 bg-orange-800 text-white rounded hover:opacity-80 text-xs"
                             title="Block domain and delete">
@@ -219,7 +225,7 @@ document.getElementById('mark-thread-read-btn')?.addEventListener('click', async
     try {
         var resp = await fetch('{{ url_for("emails.mark_thread_read", thread_id=thread_id) }}', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}'},
         });
         if (resp.ok) {
             document.querySelectorAll('[id^="message-"]').forEach(function(el) {

@@ -94,6 +94,7 @@
                     {% if entry.source == 'manual' %}
                     <form action="{{ url_for('blacklist.remove_ip', ip_id=entry.id) }}" method="post"
                           onsubmit="return confirm('Remove this IP from blacklist?')" class="inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="px-4 py-2 text-green-400 hover:bg-green-900/30 rounded-lg">
                             <i class="fas fa-check mr-2"></i>Remove
                         </button>
