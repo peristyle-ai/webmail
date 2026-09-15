@@ -161,6 +161,32 @@ def create_app():
     # CSRF doesn't apply (no form submission, JWT Bearer auth instead)
     csrf.exempt(api_proxy_bp)
     
+    # Content Security Policy — pragmatic baseline
+    # frame-ancestors: prevents clickjacking (app can't be iframed)
+    # form-action: prevents injected forms submitting externally
+    # base-uri: prevents <base> tag hijacking
+    # script-src/style-src: allows Tailwind CDN + inline (needed for current templates)
+    # img-src data:: allows inline SVG favicon
+    # connect-src: API calls are same-origin (proxied)
+    @app.after_request
+    def set_security_headers(response):
+        response.headers['Content-Security-Policy'] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; "
+            "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; "
+            "font-src 'self' https://cdnjs.cloudflare.com; "
+            "img-src 'self' data:; "
+            "connect-src 'self'; "
+            "frame-ancestors 'none'; "
+            "form-action 'self'; "
+            "base-uri 'self'"
+        )
+        # Additional security headers
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['X-Frame-Options'] = 'DENY'
+        response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+        return response
+    
     # Register error handlers
     @app.errorhandler(404)
     def not_found_error(error):
