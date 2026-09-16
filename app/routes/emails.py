@@ -914,6 +914,7 @@ def search():
                     email['sender'] = sender
         
         return render_template('inbox.html',
+                             threads=None,
                              emails=emails_list,
                              folders=folders_list,
                              current_folder=None,
@@ -921,7 +922,8 @@ def search():
                              total=total_results,
                              limit=limit,
                              search_query=query,
-                             is_search=True)
+                             is_search=True,
+                             view='emails')
     except AuthenticationError:
         session.clear()
         flash('Session expired. Please log in again.', 'warning')
