@@ -392,11 +392,13 @@ def mark_thread_read(thread_id):
 def download_attachment(attachment_id):
     try:
         import requests as req_lib
+        from app.api_client import _TLS_VERIFY
         headers = {'Authorization': f'Bearer {session["token"]}'}
         response = req_lib.get(
             f'{api.base_url}/api/attachments/{attachment_id}',
             headers=headers,
-            stream=True
+            stream=True,
+            verify=_TLS_VERIFY
         )
         if response.status_code == 200:
             content_disp = response.headers.get('Content-Disposition', '')
