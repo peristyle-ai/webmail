@@ -71,7 +71,7 @@
                             {% endif %}
                         </div>
                         <div class="flex items-center gap-2 flex-shrink-0">
-                            <span class="text-xs text-dark-muted">{{ msg.created_at|datetime }}</span>
+                            <span class="text-xs text-dark-muted">{{ msg.created_at|compact }}</span>
                             <a href="{{ url_for('emails.email_detail', email_id=msg.id) }}"
                                class="text-xs text-dark-accent hover:text-dark-accentHover"
                                title="Open single-message view">
