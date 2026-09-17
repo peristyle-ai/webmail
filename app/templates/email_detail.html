@@ -131,7 +131,7 @@
     <div class="border border-dark-border rounded-lg overflow-hidden">
         <iframe id="email-frame"
                 sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"
-                class="w-full bg-dark-card"
+                class="w-full bg-white"
                 style="min-height: 200px; border: none;"></iframe>
     </div>
 
@@ -165,16 +165,16 @@
             displayContent = content;
         } else {
             var escaped = content.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-            displayContent = '<pre style="white-space: pre-wrap; word-wrap: break-word; font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; line-height: 1.6; font-size: 14px; margin: 0; padding: 12px; color: #e2e8f0; background: #1e293b;">' + escaped + '</pre>';
+            displayContent = '<pre style="white-space: pre-wrap; word-wrap: break-word; font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; line-height: 1.6; font-size: 14px; margin: 0; padding: 12px; color: #1e293b; background: #ffffff;">' + escaped + '</pre>';
         }
 
         var html = '<!DOCTYPE html><html><head>' +
             '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
             '<base target="_blank">' +
             '<style>' +
-            'html, body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; font-size: 14px; background: #1e293b; color: #e2e8f0; }' +
+            'html, body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; font-size: 14px; background: #ffffff; color: #1e293b; }' +
             'img { max-width: 100%; height: auto; }' +
-            'a { color: #818cf8; }' +
+            'a { color: #4f46e5; }' +
             '</style>' +
             '</head><body>' + window.sanitizeEmailHtml(displayContent) + '</body></html>';
 

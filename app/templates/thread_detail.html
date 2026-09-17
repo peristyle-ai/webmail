@@ -86,7 +86,7 @@
             {% set msg_content = msg.html if msg.html else msg.body if msg.body else '<p style="color: #94a3b8;">(No content)</p>' %}
             <iframe id="thread-frame-{{ msg.id }}"
                     sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"
-                    class="w-full bg-dark-card"
+                    class="w-full bg-white"
                     style="min-height: 160px; border: none;"></iframe>
 
             {% if msg.attachments %}
@@ -200,11 +200,11 @@
                 var displayContent = content;
                 var doc = '<!DOCTYPE html><html><head><meta charset="utf-8">' +
                     '<style>' +
-                    'html, body { margin: 0; padding: 12px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; font-size: 14px; background: #1e293b; color: #e2e8f0; word-wrap: break-word; }' +
-                    'a { color: #818cf8; }' +
+                    'html, body { margin: 0; padding: 12px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; font-size: 14px; background: #ffffff; color: #1e293b; word-wrap: break-word; }' +
+                    'a { color: #4f46e5; }' +
                     'img { max-width: 100%; height: auto; }' +
-                    'blockquote { border-left: 3px solid #334155; margin-left: 0; padding-left: 12px; color: #94a3b8; }' +
-                    'pre, code { background: #0f172a; color: #e2e8f0; padding: 2px 4px; border-radius: 3px; font-family: monospace; }' +
+                    'blockquote { border-left: 3px solid #cbd5e1; margin-left: 0; padding-left: 12px; color: #64748b; }' +
+                    'pre, code { background: #f1f5f9; color: #1e293b; padding: 2px 4px; border-radius: 3px; font-family: monospace; }' +
                     '</style></head><body>' + window.sanitizeEmailHtml(displayContent) + '</body></html>';
                 iframe.srcdoc = doc;
                 iframe.addEventListener('load', function() {
