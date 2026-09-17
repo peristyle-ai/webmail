@@ -113,7 +113,7 @@ class MailServerAPI:
         }
     
     def send_email(self, token, to, subject, body, cc=None, bcc=None):
-        """Send a new email"""
+        """Send a new email. `to`, `cc`, `bcc` accept strings or lists of strings."""
         data = {'to': to, 'subject': subject, 'body': body}
         if cc:
             data['cc'] = cc

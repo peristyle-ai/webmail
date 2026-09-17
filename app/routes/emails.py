@@ -441,6 +441,12 @@ def compose():
         files = request.files.getlist('attachments')
         forward_email_id = request.form.get('forward_email_id', '').strip()
 
+        # Split comma-separated recipients into lists
+        to_list = [addr.strip() for addr in to.split(',') if addr.strip()] if to else []
+        cc_list = [addr.strip() for addr in cc.split(',') if addr.strip()] if cc else []
+        to = ', '.join(to_list)  # normalized for re-display
+        cc = ', '.join(cc_list)
+
         if forward_email_id:
             try:
                 forwarded_attachments = api.get_attachments(session['token'], int(forward_email_id)) or []
@@ -460,7 +466,7 @@ def compose():
             )
 
         try:
-            result = api.send_email(session['token'], to, subject, body, cc=cc or None)
+            result = api.send_email(session['token'], to_list, subject, body, cc=cc_list or None)
             email_id = result.get('id') if result else None
             forward_copy_failed = False
 

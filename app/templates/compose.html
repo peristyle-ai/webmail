@@ -21,16 +21,18 @@
 
         <div>
             <label for="to" class="block text-sm font-medium text-dark-muted mb-1">To</label>
-            <input type="email" id="to" name="to" required autocomplete="email"
+            <input type="text" id="to" name="to" required autocomplete="email"
+                   inputmode="email" multiple
                    class="w-full px-4 py-3 bg-dark-card border border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-accent text-dark-text placeholder-dark-muted text-base"
-                   value="{{ to }}" placeholder="recipient@example.com">
+                   value="{{ to }}" placeholder="recipient@example.com, another@example.com">
         </div>
 
         <div>
             <label for="cc" class="block text-sm font-medium text-dark-muted mb-1">Cc</label>
-            <input type="email" id="cc" name="cc" autocomplete="email"
+            <input type="text" id="cc" name="cc" autocomplete="email"
+                   inputmode="email"
                    class="w-full px-4 py-3 bg-dark-card border border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-accent text-dark-text placeholder-dark-muted text-base"
-                   value="{{ cc }}" placeholder="cc@example.com">
+                   value="{{ cc }}" placeholder="cc@example.com, another@example.com">
         </div>
 
         <div>
