@@ -198,6 +198,12 @@
                     }
                 }
                 var displayContent = content;
+                var isHtml = content.trim().charAt(0) === '<' && (content.includes('</') || content.includes('/>'));
+                if (!isHtml) {
+                    // Plain text: escape HTML and wrap in <pre> to preserve line breaks
+                    var escaped = content.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+                    displayContent = '<pre style="white-space: pre-wrap; word-wrap: break-word; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; font-size: 14px; margin: 0; padding: 0; color: #1e293b; background: #ffffff;">' + escaped + '</pre>';
+                }
                 var doc = '<!DOCTYPE html><html><head><meta charset="utf-8">' +
                     '<style>' +
                     'html, body { margin: 0; padding: 12px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; font-size: 14px; background: #ffffff; color: #1e293b; word-wrap: break-word; }' +
