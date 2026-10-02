@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pypg-mail-v1';
+const CACHE_NAME = 'pypg-mail-v2';
 const PRECACHE_URLS = [
     '/',
     '/inbox',
@@ -22,6 +22,10 @@ self.addEventListener('fetch', event => {
     if (event.request.url.includes('/auth/') ||
         event.request.url.includes('/login') ||
         event.request.url.includes('/logout')) return;
+
+    // Only handle same-origin requests — let CDN requests pass through
+    const url = new URL(event.request.url);
+    if (url.origin !== self.location.origin) return;
 
     event.respondWith(
         fetch(event.request).then(response => {

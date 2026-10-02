@@ -172,11 +172,11 @@ def create_app():
     def set_security_headers(response):
         response.headers['Content-Security-Policy'] = (
             "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; "
+            "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://static.cloudflareinsights.com; "
             "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; "
             "font-src 'self' https://cdnjs.cloudflare.com; "
             "img-src 'self' data:; "
-            "connect-src 'self'; "
+            "connect-src 'self' https://cloudflareinsights.com; "
             "frame-ancestors 'none'; "
             "form-action 'self'; "
             "base-uri 'self'"
