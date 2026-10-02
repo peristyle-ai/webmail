@@ -112,13 +112,17 @@ class MailServerAPI:
             'content': response.content,
         }
     
-    def send_email(self, token, to, subject, body, cc=None, bcc=None):
+    def send_email(self, token, to, subject, body, cc=None, bcc=None, in_reply_to=None, references=None):
         """Send a new email. `to`, `cc`, `bcc` accept strings or lists of strings."""
         data = {'to': to, 'subject': subject, 'body': body}
         if cc:
             data['cc'] = cc
         if bcc:
             data['bcc'] = bcc
+        if in_reply_to:
+            data['in_reply_to'] = in_reply_to
+        if references:
+            data['references'] = references
         return self._make_request('POST', '/api/emails', token, json=data)
     
     def upload_attachment(self, token, email_id, file_storage):

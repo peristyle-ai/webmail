@@ -440,6 +440,8 @@ def compose():
         body = request.form.get('body', '').strip()
         files = request.files.getlist('attachments')
         forward_email_id = request.form.get('forward_email_id', '').strip()
+        in_reply_to = request.form.get('in_reply_to', '').strip() or None
+        references = request.form.get('references', '').strip() or None
 
         # Split comma-separated recipients into lists
         to_list = [addr.strip() for addr in to.split(',') if addr.strip()] if to else []
@@ -466,7 +468,8 @@ def compose():
             )
 
         try:
-            result = api.send_email(session['token'], to_list, subject, body, cc=cc_list or None)
+            result = api.send_email(session['token'], to_list, subject, body, cc=cc_list or None,
+                                    in_reply_to=in_reply_to, references=references)
             email_id = result.get('id') if result else None
             forward_copy_failed = False
 
@@ -514,6 +517,8 @@ def compose():
     subject = request.args.get('subject', '')
     body = request.args.get('body', '')
     forward_email_id = request.args.get('forward_email_id', '').strip()
+    in_reply_to = request.args.get('in_reply_to', '').strip()
+    references = request.args.get('references', '').strip()
 
     if forward_email_id:
         try:
@@ -529,6 +534,8 @@ def compose():
         body=body,
         forward_email_id=forward_email_id,
         forwarded_attachments=forwarded_attachments,
+        in_reply_to=in_reply_to,
+        references=references,
     )
 
 def add_to_blocklist(email_address=None, domain=None):
@@ -749,6 +756,16 @@ def reply(email_id):
         elif not subject:
             subject = "Re: (No subject)"
         
+        # Threading headers for reply
+        message_id = email.get('message_id', '')
+        references = email.get('references_chain', '') or ''
+        if message_id:
+            # Add original message_id to references chain
+            if references:
+                references = f"{references} {message_id}"
+            else:
+                references = message_id
+        
         # Quote original
         from app import format_datetime
         sender_email = email.get('sender', {}).get('email', 'Unknown') if email.get('sender') else 'Unknown'
@@ -756,7 +773,8 @@ def reply(email_id):
         body_text = email.get('body', '')
         quoted_body = f"\n\nOn {sent_at}, {sender_email} wrote:\n> {body_text.replace(chr(10), chr(10) + '> ')}"
         
-        return redirect(url_for('emails.compose', to=to, subject=subject, body=quoted_body))
+        return redirect(url_for('emails.compose', to=to, subject=subject, body=quoted_body,
+                                in_reply_to=message_id, references=references))
     except AuthenticationError:
         session.clear()
         flash('Session expired', 'warning')
