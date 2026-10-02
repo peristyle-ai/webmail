@@ -146,7 +146,7 @@
                             title="Move to folder">
                         <option value="">Move…</option>
                         {% for folder in folders %}
-                            {% if folder.id != msg.folder_id %}
+                            {% if folder.id != msg.folder_id and folder.name != 'Sent' %}
                             <option value="{{ folder.id }}">{{ folder.name }}</option>
                             {% endif %}
                         {% endfor %}

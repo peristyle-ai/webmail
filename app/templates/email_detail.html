@@ -54,7 +54,7 @@
                     class="px-2 py-1.5 bg-dark-card border border-dark-border rounded-lg text-sm text-dark-text">
                 <option value="">Move to...</option>
                 {% for folder in folders %}
-                    {% if folder.id != email.folder_id %}
+                    {% if folder.id != email.folder_id and folder.name != 'Sent' %}
                     <option value="{{ folder.id }}">{{ folder.name }}</option>
                     {% endif %}
                 {% endfor %}
