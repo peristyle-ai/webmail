@@ -498,7 +498,7 @@ def compose():
                                 pass
                 
                 flash('Draft saved', 'success')
-                return redirect(url_for('emails.inbox', folder='Drafts'))
+                return redirect(url_for('emails.compose'))
             else:
                 result = api.send_email(session['token'], to_list, subject, body, cc=cc_list or None,
                                         in_reply_to=in_reply_to, references=references)
