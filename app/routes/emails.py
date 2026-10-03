@@ -455,6 +455,9 @@ def compose():
             except Exception:
                 forwarded_attachments = []
 
+        # Check if this is a draft save (via save_draft button)
+        save_as_draft = request.form.get('save_draft') == '1'
+        
         if not to or not subject:
             flash('To and Subject are required', 'error')
             return render_template(
@@ -468,9 +471,38 @@ def compose():
             )
 
         try:
-            result = api.send_email(session['token'], to_list, subject, body, cc=cc_list or None,
-                                    in_reply_to=in_reply_to, references=references)
-            email_id = result.get('id') if result else None
+            if save_as_draft:
+                # Get Drafts folder ID
+                folders_data = api.get_folders(session['token'])
+                drafts_folder = None
+                if isinstance(folders_data, list):
+                    drafts_folder = next((f for f in folders_data if f.get('name') == 'Drafts'), None)
+                else:
+                    drafts_folder = next((f for f in folders_data.get('folders', []) if f.get('name') == 'Drafts'), None)
+                
+                if not drafts_folder:
+                    flash('Drafts folder not found', 'error')
+                    return redirect(url_for('emails.inbox'))
+                
+                result = api.save_draft(session['token'], to_list, subject, body, cc=cc_list or None,
+                                        folder_id=drafts_folder['id'])
+                email_id = result.get('id') if result else None
+                
+                # Upload attachments to draft
+                if email_id and files:
+                    for f in files:
+                        if f and f.filename:
+                            try:
+                                api.upload_attachment(session['token'], email_id, f)
+                            except Exception:
+                                pass
+                
+                flash('Draft saved', 'success')
+                return redirect(url_for('emails.inbox', folder='Drafts'))
+            else:
+                result = api.send_email(session['token'], to_list, subject, body, cc=cc_list or None,
+                                        in_reply_to=in_reply_to, references=references)
+                email_id = result.get('id') if result else None
             forward_copy_failed = False
 
             if email_id and files:

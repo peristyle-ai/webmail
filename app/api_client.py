@@ -125,6 +125,15 @@ class MailServerAPI:
             data['references'] = references
         return self._make_request('POST', '/api/emails', token, json=data)
     
+    def save_draft(self, token, to, subject, body, cc=None, folder_id=None):
+        """Save an email as draft (stores in Drafts folder, does not send)."""
+        data = {'to': to, 'subject': subject, 'body': body}
+        if cc:
+            data['cc'] = cc
+        if folder_id:
+            data['folder_id'] = folder_id
+        return self._make_request('POST', '/api/emails', token, json=data)
+    
     def upload_attachment(self, token, email_id, file_storage):
         """Upload a file attachment to an email"""
         headers = {'Authorization': f'Bearer {token}'}
