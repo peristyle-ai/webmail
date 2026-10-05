@@ -434,6 +434,9 @@ def compose():
     forwarded_attachments = []
 
     if request.method == 'POST':
+        # Check if this is a forward redirect (pre-populated form)
+        from_forward = request.form.get('from_forward') == '1'
+        
         to = request.form.get('to', '').strip()
         cc = request.form.get('cc', '').strip()
         subject = request.form.get('subject', '').strip()
@@ -458,6 +461,24 @@ def compose():
 
         # Check if this is a draft save (via save_draft button)
         save_as_draft = request.form.get('save_draft') == '1'
+        
+        # If this is a forward redirect, render the form with pre-populated values
+        if from_forward:
+            if forward_email_id:
+                try:
+                    forwarded_attachments = api.get_attachments(session['token'], int(forward_email_id)) or []
+                except Exception:
+                    forwarded_attachments = []
+            return render_template(
+                'compose.html',
+                to=to,
+                cc=cc,
+                subject=subject,
+                body=body,
+                forward_email_id=forward_email_id,
+                forwarded_attachments=forwarded_attachments,
+                body_is_html=body_is_html,
+            )
         
         if not to or not subject:
             flash('To and Subject are required', 'error')
@@ -559,26 +580,15 @@ def compose():
                 forwarded_attachments=forwarded_attachments,
             )
 
-    # Check for session-stored forward data (avoids long URLs)
-    forward_data = session.pop('forward_data', None)
-    if forward_data:
-        subject = forward_data.get('subject', '')
-        body = forward_data.get('body', '')
-        forward_email_id = forward_data.get('forward_email_id', '')
-        body_is_html = forward_data.get('body_is_html', False)
-        to = ''
-        cc = ''
-        in_reply_to = ''
-        references = ''
-    else:
-        to = request.args.get('to', '')
-        cc = request.args.get('cc', '')
-        subject = request.args.get('subject', '')
-        body = request.args.get('body', '')
-        forward_email_id = request.args.get('forward_email_id', '').strip()
-        in_reply_to = request.args.get('in_reply_to', '').strip()
-        references = request.args.get('references', '').strip()
-        body_is_html = request.args.get('body_is_html', '')
+    # GET handler — check for query params (reply, etc.)
+    to = request.args.get('to', '')
+    cc = request.args.get('cc', '')
+    subject = request.args.get('subject', '')
+    body = request.args.get('body', '')
+    forward_email_id = request.args.get('forward_email_id', '').strip()
+    in_reply_to = request.args.get('in_reply_to', '').strip()
+    references = request.args.get('references', '').strip()
+    body_is_html = request.args.get('body_is_html', '')
 
     if forward_email_id:
         try:
@@ -847,6 +857,8 @@ def reply(email_id):
 @emails_bp.route('/emails/<int:email_id>/forward')
 @require_auth
 def forward(email_id):
+    import sys
+    print(f"DEBUG: forward route called for email_id={email_id}", file=sys.stderr, flush=True)
     try:
         email = api.get_email(session['token'], email_id)
         
@@ -875,14 +887,14 @@ def forward(email_id):
             quoted_body = f"\n\n---------- Forwarded message ----------\nFrom: {email.get('sender', {}).get('email', '')}\nDate: {email.get('created_at', '')}\nSubject: {email.get('subject', '')}\nTo: {recipient_email}\n\n{original_text}"
             body_is_html = False
         
-        # Store forward data in session to avoid long URLs (414 error)
-        session['forward_data'] = {
-            'subject': subject,
-            'body': quoted_body,
-            'forward_email_id': email_id,
-            'body_is_html': body_is_html,
-        }
-        return redirect(url_for('emails.compose'))
+        # Render a form that auto-submits to compose with the forward data
+        # This avoids both long URLs (414) and session issues
+        return render_template('forward_redirect.html',
+            subject=subject,
+            body=quoted_body,
+            forward_email_id=email_id,
+            body_is_html='1' if body_is_html else '',
+        )
     except (AuthenticationError, APIError) as e:
         flash(str(e), 'error')
         return redirect(url_for('emails.email_detail', email_id=email_id))

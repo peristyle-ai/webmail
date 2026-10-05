@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Forwarding...</title>
+</head>
+<body>
+    <form id="forwardForm" method="POST" action="{{ url_for('emails.compose') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="subject" value="{{ subject }}">
+        <input type="hidden" name="body" value="{{ body }}">
+        <input type="hidden" name="forward_email_id" value="{{ forward_email_id }}">
+        {% if body_is_html %}
+        <input type="hidden" name="body_is_html" value="1">
+        {% endif %}
+        <input type="hidden" name="from_forward" value="1">
+    </form>
+    <script>
+        document.getElementById('forwardForm').submit();
+    </script>
+    <p>Redirecting to compose...</p>
+</body>
+</html>
