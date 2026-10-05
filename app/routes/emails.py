@@ -559,14 +559,26 @@ def compose():
                 forwarded_attachments=forwarded_attachments,
             )
 
-    to = request.args.get('to', '')
-    cc = request.args.get('cc', '')
-    subject = request.args.get('subject', '')
-    body = request.args.get('body', '')
-    forward_email_id = request.args.get('forward_email_id', '').strip()
-    in_reply_to = request.args.get('in_reply_to', '').strip()
-    references = request.args.get('references', '').strip()
-    body_is_html = request.args.get('body_is_html', '')
+    # Check for session-stored forward data (avoids long URLs)
+    forward_data = session.pop('forward_data', None)
+    if forward_data:
+        subject = forward_data.get('subject', '')
+        body = forward_data.get('body', '')
+        forward_email_id = forward_data.get('forward_email_id', '')
+        body_is_html = forward_data.get('body_is_html', False)
+        to = ''
+        cc = ''
+        in_reply_to = ''
+        references = ''
+    else:
+        to = request.args.get('to', '')
+        cc = request.args.get('cc', '')
+        subject = request.args.get('subject', '')
+        body = request.args.get('body', '')
+        forward_email_id = request.args.get('forward_email_id', '').strip()
+        in_reply_to = request.args.get('in_reply_to', '').strip()
+        references = request.args.get('references', '').strip()
+        body_is_html = request.args.get('body_is_html', '')
 
     if forward_email_id:
         try:
@@ -863,8 +875,14 @@ def forward(email_id):
             quoted_body = f"\n\n---------- Forwarded message ----------\nFrom: {email.get('sender', {}).get('email', '')}\nDate: {email.get('created_at', '')}\nSubject: {email.get('subject', '')}\nTo: {recipient_email}\n\n{original_text}"
             body_is_html = False
         
-        return redirect(url_for('emails.compose', subject=subject, body=quoted_body, forward_email_id=email_id,
-                                body_is_html='1' if body_is_html else ''))
+        # Store forward data in session to avoid long URLs (414 error)
+        session['forward_data'] = {
+            'subject': subject,
+            'body': quoted_body,
+            'forward_email_id': email_id,
+            'body_is_html': body_is_html,
+        }
+        return redirect(url_for('emails.compose'))
     except (AuthenticationError, APIError) as e:
         flash(str(e), 'error')
         return redirect(url_for('emails.email_detail', email_id=email_id))
