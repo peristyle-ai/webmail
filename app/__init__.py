@@ -175,7 +175,7 @@ def create_app():
             "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://static.cloudflareinsights.com; "
             "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; "
             "font-src 'self' https://cdnjs.cloudflare.com; "
-            "img-src 'self' data:; "
+            "img-src 'self' data: https:; "
             "connect-src 'self' https://cloudflareinsights.com; "
             "frame-ancestors 'none'; "
             "form-action 'self'; "
