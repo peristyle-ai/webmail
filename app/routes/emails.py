@@ -442,6 +442,7 @@ def compose():
         forward_email_id = request.form.get('forward_email_id', '').strip()
         in_reply_to = request.form.get('in_reply_to', '').strip() or None
         references = request.form.get('references', '').strip() or None
+        body_is_html = request.form.get('body_is_html') == '1'
 
         # Split comma-separated recipients into lists
         to_list = [addr.strip() for addr in to.split(',') if addr.strip()] if to else []
@@ -500,8 +501,22 @@ def compose():
                 flash('Draft saved', 'success')
                 return redirect(url_for('emails.compose'))
             else:
-                result = api.send_email(session['token'], to_list, subject, body, cc=cc_list or None,
-                                        in_reply_to=in_reply_to, references=references)
+                # Split body into plain text and HTML if forwarding HTML
+                send_body = body
+                send_body_html = None
+                if body_is_html:
+                    # Body contains HTML — extract plain text version for the text part
+                    import re
+                    # Simple HTML to text: strip tags but preserve line breaks
+                    text_part = re.sub(r'<br\s*/?>', '\n', body, flags=re.IGNORECASE)
+                    text_part = re.sub(r'</p\s*>', '\n\n', text_part, flags=re.IGNORECASE)
+                    text_part = re.sub(r'<[^>]+>', '', text_part)
+                    text_part = re.sub(r'\n{3,}', '\n\n', text_part).strip()
+                    send_body = text_part
+                    send_body_html = body
+                
+                result = api.send_email(session['token'], to_list, subject, send_body, cc=cc_list or None,
+                                        in_reply_to=in_reply_to, references=references, body_html=send_body_html)
                 email_id = result.get('id') if result else None
             forward_copy_failed = False
 
@@ -551,6 +566,7 @@ def compose():
     forward_email_id = request.args.get('forward_email_id', '').strip()
     in_reply_to = request.args.get('in_reply_to', '').strip()
     references = request.args.get('references', '').strip()
+    body_is_html = request.args.get('body_is_html', '')
 
     if forward_email_id:
         try:
@@ -568,6 +584,7 @@ def compose():
         forwarded_attachments=forwarded_attachments,
         in_reply_to=in_reply_to,
         references=references,
+        body_is_html=body_is_html,
     )
 
 def add_to_blocklist(email_address=None, domain=None):
@@ -832,9 +849,22 @@ def forward(email_id):
             if recipient:
                 email['recipient'] = recipient
         recipient_email = email.get('recipient', {}).get('email', '') if email.get('recipient') else ''
-        quoted_body = f"\n\n---------- Forwarded message ----------\nFrom: {email.get('sender', {}).get('email', '')}\nDate: {email.get('created_at', '')}\nSubject: {email.get('subject', '')}\nTo: {recipient_email}\n\n{email.get('body', '')}"
         
-        return redirect(url_for('emails.compose', subject=subject, body=quoted_body, forward_email_id=email_id))
+        # Use HTML body if available, otherwise plain text
+        original_html = email.get('html') or email.get('body_html', '')
+        original_text = email.get('body', '')
+        
+        if original_html:
+            # Forward as HTML: include original HTML content
+            quoted_body = f"\n\n---------- Forwarded message ----------\nFrom: {email.get('sender', {}).get('email', '')}\nDate: {email.get('created_at', '')}\nSubject: {email.get('subject', '')}\nTo: {recipient_email}\n\n{original_html}"
+            # Mark as HTML so compose knows to send as HTML
+            body_is_html = True
+        else:
+            quoted_body = f"\n\n---------- Forwarded message ----------\nFrom: {email.get('sender', {}).get('email', '')}\nDate: {email.get('created_at', '')}\nSubject: {email.get('subject', '')}\nTo: {recipient_email}\n\n{original_text}"
+            body_is_html = False
+        
+        return redirect(url_for('emails.compose', subject=subject, body=quoted_body, forward_email_id=email_id,
+                                body_is_html='1' if body_is_html else ''))
     except (AuthenticationError, APIError) as e:
         flash(str(e), 'error')
         return redirect(url_for('emails.email_detail', email_id=email_id))

@@ -24,6 +24,9 @@
         {% if references %}
         <input type="hidden" name="references" value="{{ references }}">
         {% endif %}
+        {% if body_is_html %}
+        <input type="hidden" name="body_is_html" value="1">
+        {% endif %}
 
         <div>
             <label for="to" class="block text-sm font-medium text-dark-muted mb-1">To</label>
