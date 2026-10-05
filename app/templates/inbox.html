@@ -219,6 +219,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     /** Submit a form via POST with email_ids (resolved from selection). */
+    async function getCsrfToken() {
+        try {
+            const resp = await fetch('/api/csrf-token');
+            const data = await resp.json();
+            return data.csrf_token;
+        } catch (e) {
+            return '{{ csrf_token() }}';  // fallback to page token
+        }
+    }
+
     async function submitBulkForm(action, confirmMsg, extraFields) {
         const rawCount = (selectedIds.value || '').split(',').filter(Boolean).length;
         if (rawCount === 0) {
@@ -235,10 +245,11 @@ document.addEventListener('DOMContentLoaded', function() {
             : emailIds.length + ' email(s)';
         if (!confirm(confirmMsg + noun + '?')) return;
         setBusy(true);
+        const csrfToken = await getCsrfToken();
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = action;
-        let html = '<input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="email_ids" value="' + emailIds.join(',') + '">';
+        let html = '<input type="hidden" name="csrf_token" value="' + csrfToken + '"><input type="hidden" name="email_ids" value="' + emailIds.join(',') + '">';
         if (extraFields) {
             for (const [k, v] of Object.entries(extraFields)) {
                 html += '<input type="hidden" name="' + k + '" value="' + v + '">';

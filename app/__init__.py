@@ -140,6 +140,12 @@ def create_app():
         return send_from_directory(
             os.path.join(app.root_path, 'static'), 'sw.js',
             mimetype='application/javascript')
+    
+    # CSRF token refresh endpoint — returns a fresh token for AJAX requests
+    @app.route('/api/csrf-token')
+    def csrf_token_refresh():
+        from flask_wtf.csrf import generate_csrf
+        return {'csrf_token': generate_csrf()}
 
     from app.routes.auth import auth_bp
     from app.routes.emails import emails_bp
