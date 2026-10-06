@@ -14,7 +14,7 @@
     {% for thread in threads %}
     {% set unread = thread.unread_count|int > 0 %}
     <div class="thread-row flex items-center gap-2 sm:gap-3 px-3 py-2 sm:px-4 sm:py-2.5
-                {% if unread %}bg-dark-accent/5{% endif %}
+                {% if unread %}bg-dark-accent/5{% else %}bg-dark-bg/50{% endif %}
                 hover:bg-dark-hover/40 transition-colors">
         <!-- Checkbox (stops propagation so row click doesn't fire) -->
         <input type="checkbox" name="thread_select" value="{{ thread.thread_id }}"

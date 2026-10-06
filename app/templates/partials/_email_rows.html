@@ -14,7 +14,7 @@
 <div class="divide-y divide-dark-border">
     {% for email in emails %}
     <div class="email-row flex items-center gap-2 sm:gap-3 px-3 py-2 sm:px-4 sm:py-2.5
-                {% if not email.is_read %}bg-dark-accent/5{% endif %}
+                {% if not email.is_read %}bg-dark-accent/5{% else %}bg-dark-bg/50{% endif %}
                 hover:bg-dark-hover/40 transition-colors">
         <!-- Checkbox -->
         <input type="checkbox" name="email_select" value="{{ email.id }}"
