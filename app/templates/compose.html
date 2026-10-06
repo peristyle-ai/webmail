@@ -95,4 +95,30 @@
         </div>
     </form>
 </div>
+
+<script>
+// Fetch fresh CSRF token before form submission to avoid expiration
+(function() {
+    const form = document.querySelector('form');
+    if (!form) return;
+    
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        try {
+            const resp = await fetch('/api/csrf-token');
+            const data = await resp.json();
+            const csrfInput = form.querySelector('input[name="csrf_token"]');
+            if (csrfInput) {
+                csrfInput.value = data.csrf_token;
+            }
+        } catch (err) {
+            console.warn('Failed to refresh CSRF token:', err);
+        }
+        
+        // Submit the form with the fresh token
+        form.submit();
+    });
+})();
+</script>
 {% endblock %}
