@@ -225,5 +225,13 @@ document.getElementById('more-actions-btn')?.addEventListener('click', function(
     var panel = document.getElementById('more-actions');
     panel.classList.toggle('hidden');
 });
+
+// Auto-mark email as read when opened
+(function() {
+    fetch('{{ url_for("emails.mark_read_auto", email_id=email.id) }}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}'},
+    }).catch(function() {});
+})();
 </script>
 {% endblock %}

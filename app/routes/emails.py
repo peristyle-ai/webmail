@@ -321,6 +321,16 @@ def email_detail(email_id):
         flash(str(e), 'error')
         return redirect(url_for('emails.inbox'))
 
+@emails_bp.route('/emails/<int:email_id>/read-auto', methods=['POST'])
+@require_auth
+def mark_read_auto(email_id):
+    """Auto-mark email as read when opened (called from template)."""
+    try:
+        api.mark_read(session['token'], email_id)
+        return jsonify({'status': 'ok'}), 200
+    except (AuthenticationError, APIError):
+        return jsonify({'error': 'failed'}), 500
+
 @emails_bp.route('/threads/<thread_id>')
 @require_auth
 def thread_detail(thread_id):
@@ -373,6 +383,16 @@ def thread_detail(thread_id):
     except APIError as e:
         flash(str(e), 'error')
         return redirect(url_for('emails.inbox'))
+
+@emails_bp.route('/threads/<thread_id>/read-auto', methods=['POST'])
+@require_auth
+def mark_thread_read_auto(thread_id):
+    """Auto-mark thread as read when opened (called from template)."""
+    try:
+        api.mark_thread_read(session['token'], thread_id)
+        return jsonify({'status': 'ok'}), 200
+    except (AuthenticationError, APIError):
+        return jsonify({'error': 'failed'}), 500
 
 @emails_bp.route('/threads/<thread_id>/read', methods=['POST'])
 @require_auth

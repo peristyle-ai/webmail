@@ -244,5 +244,13 @@ document.getElementById('mark-thread-read-btn')?.addEventListener('click', async
         console.error('mark_thread_read failed', e);
     }
 });
+
+// Auto-mark thread as read when opened
+(function() {
+    fetch('{{ url_for("emails.mark_thread_read_auto", thread_id=thread_id) }}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}'},
+    }).catch(function() {});
+})();
 </script>
 {% endblock %}
