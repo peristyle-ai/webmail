@@ -157,10 +157,11 @@
             }
         }
 
-        // Detect HTML: check if content contains HTML tags anywhere (not just at start)
+        // Detect HTML: check if content starts with HTML tag OR contains blockquote/div/table
         // This handles replies that start with plain text but include HTML quotes
-        var hasHtmlTags = /<[a-z][^>]*>/i.test(content) && (</[a-z]+>/i.test(content) || /<[a-z][^>]*\/>/i.test(content));
-        var isHtml = content.trim().charAt(0) === '<' || hasHtmlTags;
+        var startsWithHtml = content.trim().charAt(0) === '<';
+        var hasHtmlBlocks = /<(blockquote|div|table|p|span|br|html|body|head)[\s>]/i.test(content);
+        var isHtml = startsWithHtml || hasHtmlBlocks;
         var bgColor = getComputedStyle(document.documentElement).getPropertyValue('--tw-bg-opacity') ? '#0f172a' : '#1e293b';
 
         var displayContent;
