@@ -861,11 +861,22 @@ def reply(email_id):
         from app import format_datetime
         sender_email = email.get('sender', {}).get('email', 'Unknown') if email.get('sender') else 'Unknown'
         sent_at = format_datetime(email.get('created_at', '')) or email.get('created_at', '')
-        body_text = email.get('body', '')
-        quoted_body = f"\n\nOn {sent_at}, {sender_email} wrote:\n> {body_text.replace(chr(10), chr(10) + '> ')}"
+        
+        # Use HTML body if available, otherwise plain text
+        original_html = email.get('html') or email.get('body_html', '')
+        original_text = email.get('body', '')
+        
+        if original_html:
+            # Reply with HTML: include original HTML content in blockquote
+            quoted_body = f"\n\nOn {sent_at}, {sender_email} wrote:\n<blockquote>{original_html}</blockquote>"
+            body_is_html = True
+        else:
+            quoted_body = f"\n\nOn {sent_at}, {sender_email} wrote:\n> {original_text.replace(chr(10), chr(10) + '> ')}"
+            body_is_html = False
         
         return redirect(url_for('emails.compose', to=to, subject=subject, body=quoted_body,
-                                in_reply_to=message_id, references=references))
+                                in_reply_to=message_id, references=references,
+                                body_is_html='1' if body_is_html else ''))
     except AuthenticationError:
         session.clear()
         flash('Session expired', 'warning')
