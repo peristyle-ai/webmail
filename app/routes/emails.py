@@ -874,9 +874,16 @@ def reply(email_id):
             quoted_body = f"\n\nOn {sent_at}, {sender_email} wrote:\n> {original_text.replace(chr(10), chr(10) + '> ')}"
             body_is_html = False
         
-        return redirect(url_for('emails.compose', to=to, subject=subject, body=quoted_body,
-                                in_reply_to=message_id, references=references,
-                                body_is_html='1' if body_is_html else ''))
+        # Render a form that auto-submits to compose with the reply data
+        # This avoids both long URLs (414) and session issues
+        return render_template('forward_redirect.html',
+            to=to,
+            subject=subject,
+            body=quoted_body,
+            in_reply_to=message_id,
+            references=references,
+            body_is_html='1' if body_is_html else '',
+        )
     except AuthenticationError:
         session.clear()
         flash('Session expired', 'warning')
