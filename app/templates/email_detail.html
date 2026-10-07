@@ -157,7 +157,10 @@
             }
         }
 
-        var isHtml = content.trim().charAt(0) === '<' && (content.includes('</') || content.includes('/>'));
+        // Detect HTML: check if content contains HTML tags anywhere (not just at start)
+        // This handles replies that start with plain text but include HTML quotes
+        var hasHtmlTags = /<[a-z][^>]*>/i.test(content) && (</[a-z]+>/i.test(content) || /<[a-z][^>]*\/>/i.test(content));
+        var isHtml = content.trim().charAt(0) === '<' || hasHtmlTags;
         var bgColor = getComputedStyle(document.documentElement).getPropertyValue('--tw-bg-opacity') ? '#0f172a' : '#1e293b';
 
         var displayContent;

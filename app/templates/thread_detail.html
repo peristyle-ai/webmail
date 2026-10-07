@@ -198,7 +198,10 @@
                     }
                 }
                 var displayContent = content;
-                var isHtml = content.trim().charAt(0) === '<' && (content.includes('</') || content.includes('/>'));
+                // Detect HTML: check if content contains HTML tags anywhere (not just at start)
+                // This handles replies that start with plain text but include HTML quotes
+                var hasHtmlTags = /<[a-z][^>]*>/i.test(content) && (</[a-z]+>/i.test(content) || /<[a-z][^>]*\/>/i.test(content));
+                var isHtml = content.trim().charAt(0) === '<' || hasHtmlTags;
                 if (!isHtml) {
                     // Plain text: normalize \r to \n, escape HTML, wrap in <pre> to preserve line breaks
                     var normalized = content.replace(/\r\n?/g, '\n');
