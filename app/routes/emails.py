@@ -554,7 +554,20 @@ def compose():
                     text_part = re.sub(r'<[^>]+>', '', text_part)
                     text_part = re.sub(r'\n{3,}', '\n\n', text_part).strip()
                     send_body = text_part
-                    send_body_html = body
+                    
+                    # For HTML part: convert plain text newlines to <br> before any HTML content
+                    # This preserves the user's reply formatting when it precedes an HTML quote
+                    html_part = body
+                    # Find where HTML content starts (first <blockquote, <div, etc.)
+                    html_start = re.search(r'<(blockquote|div|table|p|span|br|html|body|head)[\s>]', html_part, re.IGNORECASE)
+                    if html_start:
+                        # Convert newlines to <br> in the plain text part before HTML
+                        plain_part = html_part[:html_start.start()]
+                        html_content = html_part[html_start.start():]
+                        plain_part = plain_part.replace('\n', '<br>')
+                        html_part = plain_part + html_content
+                    
+                    send_body_html = html_part
                 
                 result = api.send_email(session['token'], to_list, subject, send_body, cc=cc_list or None,
                                         in_reply_to=in_reply_to, references=references, body_html=send_body_html)
@@ -868,9 +881,11 @@ def reply(email_id):
         
         if original_html:
             # Reply with HTML: include original HTML content in blockquote
+            # Convert plain text newlines to <br> so they render in HTML context
             quoted_body = f"\n\nOn {sent_at}, {sender_email} wrote:\n<blockquote>{original_html}</blockquote>"
             body_is_html = True
         else:
+            # Plain text reply: use > prefixes, keep as plain text
             quoted_body = f"\n\nOn {sent_at}, {sender_email} wrote:\n> {original_text.replace(chr(10), chr(10) + '> ')}"
             body_is_html = False
         
