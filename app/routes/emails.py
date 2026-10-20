@@ -434,11 +434,16 @@ def download_attachment(attachment_id):
             from flask import Response
             from urllib.parse import quote
             encoded_filename = quote(filename)
+            
+            # Check if inline display is requested (for images in emails)
+            inline = request.args.get('inline', 'false').lower() == 'true'
+            disposition = 'inline' if inline else 'attachment'
+            
             return Response(
                 response.iter_content(chunk_size=8192),
                 content_type=content_type,
                 headers={
-                    'Content-Disposition': f"attachment; filename=\"{filename}\"; filename*=UTF-8''{encoded_filename}"
+                    'Content-Disposition': f"{disposition}; filename=\"{filename}\"; filename*=UTF-8''{encoded_filename}"
                 }
             )
         else:
