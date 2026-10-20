@@ -21,6 +21,10 @@ class Config:
     
     # Session
     PERMANENT_SESSION_LIFETIME = 86400  # 24 hours, matching JWT token
-    SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'True').lower() == 'true'
+    # SESSION_COOKIE_SECURE: only send cookies over HTTPS. The Flask app runs on
+    # HTTP internally (behind a reverse proxy that terminates SSL), so we must
+    # NOT set Secure=True or the browser won't send the session cookie back.
+    # Set SESSION_COOKIE_SECURE=true only if the app itself serves HTTPS directly.
+    SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'False').lower() == 'true'
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
