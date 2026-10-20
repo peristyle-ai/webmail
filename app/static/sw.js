@@ -1,7 +1,6 @@
-const CACHE_NAME = 'pypg-mail-v2';
+const CACHE_NAME = 'pypg-mail-v3';
 const PRECACHE_URLS = [
     '/',
-    '/inbox',
     '/static/manifest.json'
 ];
 
@@ -29,7 +28,8 @@ self.addEventListener('fetch', event => {
 
     event.respondWith(
         fetch(event.request).then(response => {
-            if (response.ok && response.type === 'basic') {
+            // Don't cache redirects or errors — only cache successful 200 responses
+            if (response.ok && response.status === 200 && response.type === 'basic') {
                 const clone = response.clone();
                 caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
             }

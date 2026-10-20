@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 from flask import Flask, send_from_directory, session
 from flask_wtf.csrf import CSRFProtect
+from werkzeug.middleware.proxy_fix import ProxyFix
 from config import Config
 
 def format_datetime(value):
@@ -162,6 +163,11 @@ def create_app():
     app.register_blueprint(blacklist_bp)
     app.register_blueprint(blocklist_bp)
     app.register_blueprint(api_proxy_bp)
+    
+    # Trust proxy headers (X-Forwarded-Proto, X-Forwarded-For) when behind
+    # a reverse proxy (nginx, Cloudflare, etc.). This ensures url_for() and
+    # session cookies work correctly with HTTPS termination at the proxy.
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
     
     # API proxy is a same-origin pass-through to the mail server —
     # CSRF doesn't apply (no form submission, JWT Bearer auth instead)
