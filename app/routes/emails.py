@@ -309,6 +309,25 @@ def email_detail(email_id):
         except APIError:
             pass
         
+        # Replace CID references in HTML with attachment URLs
+        if email.get('body_html') and attachments:
+            import re
+            # Build map of filename -> attachment URL
+            cid_map = {}
+            for att in attachments:
+                cid_map[att['file_name']] = url_for('emails.download_attachment', attachment_id=att['id'], inline=True)
+            
+            # Replace cid: URLs
+            def replace_cid(match):
+                cid = match.group(1)
+                # Try with and without @domain part
+                for filename, url in cid_map.items():
+                    if cid == filename or cid.startswith(filename + '@'):
+                        return f'src="{url}"'
+                return match.group(0)
+            
+            email['body_html'] = re.sub(r'src="cid:([^"]+)"', replace_cid, email['body_html'], flags=re.IGNORECASE)
+        
         return render_template('email_detail.html', 
                              email=email or {},
                              folders=folders_list,
