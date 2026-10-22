@@ -64,11 +64,16 @@
                                              rounded uppercase tracking-wide">New</span>
                                 {% endif %}
                             </div>
-                            {% if msg.recipient %}
                             <div class="text-xs text-dark-muted truncate">
+                                {% if msg.to_recipients %}
+                                To: {% for r in msg.to_recipients %}{{ r.email }}{% if not loop.last %}, {% endif %}{% endfor %}
+                                {% elif msg.recipient %}
                                 To: {{ msg.recipient.email }}
+                                {% endif %}
+                                {% if msg.cc_recipients %}
+                                <br>Cc: {% for r in msg.cc_recipients %}{{ r.email }}{% if not loop.last %}, {% endif %}{% endfor %}
+                                {% endif %}
                             </div>
-                            {% endif %}
                         </div>
                         <div class="flex items-center gap-2 flex-shrink-0">
                             <span class="text-xs text-dark-muted">{{ msg.created_at|compact }}</span>
