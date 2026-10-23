@@ -894,15 +894,18 @@ def reply_all(email_id):
         original_to = []
         original_cc = []
         
-        # The email API returns to_recipients and cc_recipients for thread messages
-        # For single email view, we need to parse from headers or use the recipient field
-        if email.get('to_recipients'):
-            original_to = [r['email'] for r in email.get('to_recipients', []) if r.get('email')]
-        elif email.get('recipient'):
-            original_to = [email['recipient'].get('email', '')]
+        # Fetch recipients from the recipients endpoint
+        try:
+            recipients_data = api.get_email_recipients(session['token'], email_id)
+            if isinstance(recipients_data, dict):
+                original_to = [r['email'] for r in recipients_data.get('to', []) if r.get('email')]
+                original_cc = [r['email'] for r in recipients_data.get('cc', []) if r.get('email')]
+        except APIError:
+            pass
         
-        if email.get('cc_recipients'):
-            original_cc = [r['email'] for r in email.get('cc_recipients', []) if r.get('email')]
+        # Fallback: use the recipient field if no recipients data
+        if not original_to and email.get('recipient'):
+            original_to = [email['recipient'].get('email', '')]
         
         # Build To: original sender + all original To recipients (except current user)
         to_list = []
