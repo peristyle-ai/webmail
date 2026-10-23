@@ -309,6 +309,16 @@ def email_detail(email_id):
         except APIError:
             pass
         
+        # Fetch recipients for reply-all functionality
+        try:
+            recipients_data = api.get_email_recipients(session['token'], email_id)
+            if isinstance(recipients_data, dict):
+                email['to_recipients'] = recipients_data.get('to', [])
+                email['cc_recipients'] = recipients_data.get('cc', [])
+                email['bcc_recipients'] = recipients_data.get('bcc', [])
+        except APIError:
+            pass
+        
         # Replace CID references in HTML with attachment URLs
         if email.get('body_html') and attachments:
             import re
@@ -859,6 +869,106 @@ def bulk_move():
         flash('Some emails could not be moved: ' + '; '.join(errors), 'error')
     
     return redirect(url_for('emails.inbox'))
+
+@emails_bp.route('/emails/<int:email_id>/reply-all')
+@require_auth
+def reply_all(email_id):
+    try:
+        email = api.get_email(session['token'], email_id)
+        
+        if not email:
+            flash('Email not found', 'error')
+            return redirect(url_for('emails.inbox'))
+        
+        # Extract sender from headers if not in response
+        if not email.get('sender') and email.get('headers'):
+            sender = extract_sender_from_headers(email['headers'])
+            if sender:
+                email['sender'] = sender
+        
+        # Build reply-all: To includes original sender + all original To recipients (except self)
+        # CC includes all original CC recipients (except self)
+        current_user_email = session.get('user', {}).get('email', '')
+        
+        # Get original recipients from the email
+        original_to = []
+        original_cc = []
+        
+        # The email API returns to_recipients and cc_recipients for thread messages
+        # For single email view, we need to parse from headers or use the recipient field
+        if email.get('to_recipients'):
+            original_to = [r['email'] for r in email.get('to_recipients', []) if r.get('email')]
+        elif email.get('recipient'):
+            original_to = [email['recipient'].get('email', '')]
+        
+        if email.get('cc_recipients'):
+            original_cc = [r['email'] for r in email.get('cc_recipients', []) if r.get('email')]
+        
+        # Build To: original sender + all original To recipients (except current user)
+        to_list = []
+        sender_email = email.get('sender', {}).get('email', '') if email.get('sender') else ''
+        if sender_email and sender_email != current_user_email:
+            to_list.append(sender_email)
+        for r in original_to:
+            if r and r != current_user_email and r not in to_list:
+                to_list.append(r)
+        
+        # Build Cc: all original CC recipients (except current user)
+        cc_list = []
+        for r in original_cc:
+            if r and r != current_user_email and r not in cc_list:
+                cc_list.append(r)
+        
+        to = ', '.join(to_list)
+        cc = ', '.join(cc_list)
+        
+        subject = email.get('subject', '')
+        if subject and not subject.startswith('Re: '):
+            subject = f"Re: {subject}"
+        elif not subject:
+            subject = "Re: (No subject)"
+        
+        # Threading headers for reply
+        message_id = email.get('message_id', '')
+        references = email.get('references_chain', '') or ''
+        if message_id:
+            if references:
+                references = f"{references} {message_id}"
+            else:
+                references = message_id
+        
+        # Quote original
+        from app import format_datetime
+        sender_email = email.get('sender', {}).get('email', 'Unknown') if email.get('sender') else 'Unknown'
+        sent_at = format_datetime(email.get('created_at', '')) or email.get('created_at', '')
+        
+        # Use HTML body if available, otherwise plain text
+        original_html = email.get('html') or email.get('body_html', '')
+        original_text = email.get('body', '')
+        
+        if original_html:
+            quoted_body = f"\n\nOn {sent_at}, {sender_email} wrote:\n<blockquote>{original_html}</blockquote>"
+            body_is_html = True
+        else:
+            quoted_body = f"\n\nOn {sent_at}, {sender_email} wrote:\n> {original_text.replace(chr(10), chr(10) + '> ')}"
+            body_is_html = False
+        
+        return render_template('forward_redirect.html',
+            to=to,
+            cc=cc,
+            subject=subject,
+            body=quoted_body,
+            in_reply_to=message_id,
+            references=references,
+            body_is_html='1' if body_is_html else '',
+        )
+    except AuthenticationError:
+        session.clear()
+        flash('Session expired', 'warning')
+        return redirect(url_for('auth.login'))
+    except APIError as e:
+        flash(str(e), 'error')
+        return redirect(url_for('emails.inbox'))
 
 @emails_bp.route('/emails/<int:email_id>/reply')
 @require_auth
