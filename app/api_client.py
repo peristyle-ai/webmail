@@ -86,6 +86,10 @@ class MailServerAPI:
         """Get attachments for an email"""
         return self._make_request('GET', f'/api/emails/{email_id}/attachments', token)
 
+    def get_email_recipients(self, token, email_id):
+        """Get all recipients (To, Cc, Bcc) for an email"""
+        return self._make_request('GET', f'/api/emails/{email_id}/recipients', token)
+
     def download_attachment(self, token, attachment_id):
         """Download attachment content and metadata."""
         headers = {'Authorization': f'Bearer {token}'}

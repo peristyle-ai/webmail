@@ -18,6 +18,16 @@
                 <i class="fas fa-reply mr-1"></i><span class="hidden sm:inline">Reply</span>
             </a>
 
+            {% if email.to_recipients or email.cc_recipients %}
+            {% set total_recipients = (email.to_recipients|length if email.to_recipients else 0) + (email.cc_recipients|length if email.cc_recipients else 0) %}
+            {% if total_recipients > 1 %}
+            <a href="{{ url_for('emails.reply_all', email_id=email.id) }}"
+               class="px-3 py-1.5 bg-dark-accent text-white rounded-lg hover:bg-dark-accentHover text-sm">
+                <i class="fas fa-reply-all mr-1"></i><span class="hidden sm:inline">Reply All</span>
+            </a>
+            {% endif %}
+            {% endif %}
+
             <a href="{{ url_for('emails.forward', email_id=email.id) }}"
                class="px-3 py-1.5 bg-dark-hover text-dark-text rounded-lg hover:bg-dark-border text-sm">
                 <i class="fas fa-share mr-1"></i><span class="hidden sm:inline">Forward</span>
