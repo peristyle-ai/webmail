@@ -120,6 +120,17 @@
                     <i class="fas fa-reply"></i><span class="hidden sm:inline ml-1">Reply</span>
                 </a>
 
+                {% if msg.to_recipients is defined or msg.cc_recipients is defined %}
+                {% set total_recipients = (msg.to_recipients|length if msg.to_recipients else 0) + (msg.cc_recipients|length if msg.cc_recipients else 0) %}
+                {% if total_recipients > 1 %}
+                <a href="{{ url_for('emails.reply_all', email_id=msg.id) }}"
+                   class="px-2 py-1 bg-dark-accent text-white rounded hover:bg-dark-accentHover text-xs"
+                   title="Reply to all recipients">
+                    <i class="fas fa-reply-all"></i><span class="hidden sm:inline ml-1">Reply All</span>
+                </a>
+                {% endif %}
+                {% endif %}
+
                 <a href="{{ url_for('emails.forward', email_id=msg.id) }}"
                    class="px-2 py-1 bg-dark-hover text-dark-text rounded hover:bg-dark-border text-xs"
                    title="Forward this message">

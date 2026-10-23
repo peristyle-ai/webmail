@@ -18,7 +18,7 @@
                 <i class="fas fa-reply mr-1"></i><span class="hidden sm:inline">Reply</span>
             </a>
 
-            {% if email.to_recipients or email.cc_recipients %}
+            {% if email.to_recipients is defined or email.cc_recipients is defined %}
             {% set total_recipients = (email.to_recipients|length if email.to_recipients else 0) + (email.cc_recipients|length if email.cc_recipients else 0) %}
             {% if total_recipients > 1 %}
             <a href="{{ url_for('emails.reply_all', email_id=email.id) }}"
