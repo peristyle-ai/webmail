@@ -12,7 +12,7 @@ class Config:
     MAIL_SERVER_API_URL = os.environ.get('MAIL_SERVER_API_URL') or 'http://localhost:5003'
     
     # Database
-    DATABASE_URL = os.environ.get('DATABASE_URL') or 'postgresql://postgres:1234@localhost:5432/mail_server_client'
+    DATABASE_URL = os.environ.get('DATABASE_URL') or 'postgresql://postgres:not-a-real-password@localhost:5432/mail_server_client'
     
     # Flask
     DEBUG = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
