@@ -70,7 +70,7 @@ pip install -r requirements.txt
 The client uses a separate PostgreSQL database. Create it:
 
 ```bash
-psql postgresql://postgres:1234@localhost:5432/postgres -c "CREATE DATABASE mail_server_client;"
+psql postgresql://postgres:not-a-real-password@localhost:5432/postgres -c "CREATE DATABASE mail_server_client;"
 ```
 
 The tables will be created automatically on first run.
@@ -81,7 +81,7 @@ Default configuration in `config.py`:
 - Port: 5005
 - Host: 192.168.4.41 (set via `HOST` env var)
 - Mail Server API: `http://192.168.4.41:5003`
-- Database: postgresql://postgres:1234@localhost:5432/mail_server_client
+- Database: postgresql://postgres:not-a-real-password@localhost:5432/mail_server_client
 
 To customize, set environment variables in `.env`:
 ```bash
@@ -263,7 +263,7 @@ python3 run.py
 ### Database Connection Issues
 Verify PostgreSQL is running and database exists:
 ```bash
-psql postgresql://postgres:1234@localhost:5432/mail_server_client -c "\dt"
+psql postgresql://postgres:not-a-real-password@localhost:5432/mail_server_client -c "\dt"
 ```
 
 ### Port Already in Use
