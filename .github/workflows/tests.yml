@@ -1,0 +1,51 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  secret-scan:
+    # GitHub's own secret scanning and push protection are free on a PUBLIC
+    # repository. This job is the SYNCHRONOUS gate: it fails the build the
+    # moment a secret is committed. GitHub's own scanning is asynchronous --
+    # an alert arrives minutes after the push -- so this is the one that
+    # actually stops it.
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The whole history, not a shallow clone: a secret that was
+          # committed and then deleted is still in the history, and
+          # deleting the file does not un-leak it.
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: no secret was committed
+        run: python scripts/check_no_secrets.py
+
+  compile:
+    # This repository's tests are CONNECTIVITY tests against a running mail
+    # server (they call its /health), so they cannot run in CI without one.
+    # What CI can check is that the code still compiles and imports.
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: install the dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: every module compiles
+        run: python -m compileall -q app config.py run.py

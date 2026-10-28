@@ -278,10 +278,10 @@ The email client (`py_pg_client`) should call these endpoints when blocking:
 ## Testing
 
 ```bash
-# Login
+# Login  -- <operator-password> is a PLACEHOLDER: substitute the real one.
 TOKEN=$(curl -s -X POST http://localhost:5003/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email": "the operator@example.com.au", "password": "not-a-real-password"}' | jq -r '.token')
+  -d '{"email": "the operator@example.com.au", "password": "<operator-password>"}' | jq -r '.token')
 
 # Block a sender
 curl -X POST http://localhost:5003/api/blacklist/sender \

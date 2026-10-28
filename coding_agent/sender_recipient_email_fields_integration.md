@@ -203,10 +203,10 @@ def store_email(self, sender, recipient, subject, body, headers):
 ## Testing
 
 ```bash
-# Login
+# Login  -- <operator-password> is a PLACEHOLDER: substitute the real one.
 TOKEN=$(curl -s -X POST http://localhost:5003/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email": "the operator@example.com.au", "password": "not-a-real-password"}' | jq -r '.token')
+  -d '{"email": "the operator@example.com.au", "password": "<operator-password>"}' | jq -r '.token')
 
 # Get single email - should have sender_email and recipient_email
 curl -H "Authorization: Bearer $TOKEN" http://localhost:5003/api/emails/416 | jq '{id, subject, sender_email, recipient_email}'
