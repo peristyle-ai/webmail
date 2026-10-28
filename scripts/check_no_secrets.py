@@ -65,12 +65,18 @@ SECRET_PATTERNS: list[tuple[str, re.Pattern]] = [
 # if BOTH the place and the value match, so a real secret in a test file
 # is still a finding.
 ALLOWLIST: list[tuple[str, str, str]] = [
-    ("tests/*", "not-a-real-password", "the suite's throwaway fixture password"),
-    ("tests/*", "nobody", "a test fixture's placeholder password"),
-    ("tests/*", "***", "a test fixture's masked value"),
-    ("coding_agent/*.md", "<operator-password>", "a documentation example"),
+# Each entry is (path-glob, exact value, why). A finding is excused only
+# if BOTH the place and the value match, so a real secret in a test file
+# is still a finding. The exemptions are printed on every run.
     ("*.github/workflows/*.yml", "password", "the CI's own throwaway postgres password"),
     ("docs/*", "password", "a documentation example"),
+    ("tests/*", "not-a-real-password", "the suite's throwaway fixture password"),
+    ("tests/*", "not-a-real-secure-password", "the suite's throwaway secure fixture password"),
+    ("tests/*", "nobody", "a test fixture's placeholder password"),
+    ("tests/*", "keepthispassword", "a test fixture's placeholder password"),
+    ("tests/*", "***", "a test fixture's masked value"),
+    (".env.example", "password", "the example env's placeholder password"),
+("*.md", "password", "a documentation example's placeholder connection-string password"),
 ]
 
 # --- the exempt files --------------------------------------------------
