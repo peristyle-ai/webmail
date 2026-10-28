@@ -62,10 +62,10 @@ pytest tests/test_html_emails.py -v
 ## Usage Example
 
 ```bash
-# Login
+# Login  -- <operator-password> is a PLACEHOLDER: substitute the real one.
 TOKEN=$(curl -s -X POST http://localhost:5003/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email": "the operator@example.com.au", "password": "password123"}' | jq -r '.token')
+  -d '{"email": "the operator@example.com.au", "password": "<operator-password>"}' | jq -r '.token')
 
 # Fetch email with HTML body
 curl -H "Authorization: Bearer $TOKEN" http://localhost:5003/api/emails/544 | jq '.html'
