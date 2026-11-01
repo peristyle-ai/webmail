@@ -1,5 +1,9 @@
 name: tests
 
+# The repository was replaced on 2026-11-02, so that the personal addresses
+# in its history would leave the public record. The history is rewritten; the
+# tree, the tests and this gate are unchanged.
+
 on:
   push:
     branches: [main]
