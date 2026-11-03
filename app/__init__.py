@@ -7,6 +7,13 @@ from flask_wtf.csrf import CSRFProtect
 from werkzeug.middleware.proxy_fix import ProxyFix
 from config import Config
 
+# The operator's timezone. Australia/Brisbane is UTC+10 all year, with no
+# daylight saving; Australia/Sydney is UTC+11 for roughly half the year, so
+# every timestamp rendered in the UI was an hour ahead from late September
+# to early April. There is no endpoint that lets a user set a timezone, so
+# this default is the only value most accounts ever had.
+DEFAULT_TIMEZONE = 'Australia/Brisbane'
+
 def format_datetime(value):
     if not value:
         return ''
@@ -23,11 +30,11 @@ def format_datetime(value):
         return value
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
-    tz_name = session.get('user', {}).get('timezone', 'Australia/Sydney')
+    tz_name = session.get('user', {}).get('timezone', DEFAULT_TIMEZONE)
     try:
         dt = dt.astimezone(ZoneInfo(tz_name))
     except Exception:
-        dt = dt.astimezone(ZoneInfo('Australia/Sydney'))
+        dt = dt.astimezone(ZoneInfo(DEFAULT_TIMEZONE))
     return dt.strftime('%b %d, %Y %I:%M %p')
 
 
@@ -59,11 +66,11 @@ def format_short_date(value):
         return value
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
-    tz_name = session.get('user', {}).get('timezone', 'Australia/Sydney')
+    tz_name = session.get('user', {}).get('timezone', DEFAULT_TIMEZONE)
     try:
         local_dt = dt.astimezone(ZoneInfo(tz_name))
     except Exception:
-        local_dt = dt.astimezone(ZoneInfo('Australia/Sydney'))
+        local_dt = dt.astimezone(ZoneInfo(DEFAULT_TIMEZONE))
     now = datetime.now(local_dt.tzinfo)
     delta_days = (now.date() - local_dt.date()).days
     if delta_days < 0:
@@ -100,7 +107,7 @@ def format_compact(value):
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
     try:
-        dt = dt.astimezone(ZoneInfo(session.get('user', {}).get('timezone', 'Australia/Sydney')))
+        dt = dt.astimezone(ZoneInfo(session.get('user', {}).get('timezone', DEFAULT_TIMEZONE)))
     except Exception:
         pass
     return dt.strftime('%Y-%m-%d %H:%M')

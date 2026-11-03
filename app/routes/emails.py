@@ -589,6 +589,8 @@ def compose():
                 body=body,
                 forward_email_id=forward_email_id,
                 forwarded_attachments=forwarded_attachments,
+                in_reply_to=in_reply_to,
+                references=references,
                 body_is_html=body_is_html,
             )
         
@@ -603,6 +605,9 @@ def compose():
                 body=body,
                 forward_email_id=forward_email_id,
                 forwarded_attachments=forwarded_attachments,
+                in_reply_to=in_reply_to,
+                references=references,
+                body_is_html=body_is_html,
             )
 
         try:
@@ -710,6 +715,9 @@ def compose():
                 body=body,
                 forward_email_id=forward_email_id,
                 forwarded_attachments=forwarded_attachments,
+                in_reply_to=in_reply_to,
+                references=references,
+                body_is_html=body_is_html,
             )
 
     # GET handler — check for query params (reply, etc.)
