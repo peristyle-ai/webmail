@@ -3,7 +3,7 @@ import psycopg2
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 from flask import Flask, send_from_directory, session
-from flask_wtf.csrf import CSRFProtect
+from flask_wtf.csrf import CSRFProtect, CSRFError
 from werkzeug.middleware.proxy_fix import ProxyFix
 from config import Config
 
@@ -155,6 +155,11 @@ def create_app():
     from app.routes.blacklist import blacklist_bp
     from app.routes.blocklist import blocklist_bp
     from app.routes.api_proxy import api_proxy_bp
+
+    # A CSRF rejection is recoverable: the compose form is re-rendered with
+    # the user's message intact instead of Flask-WTF's bare 400 page.
+    from app.routes.emails import handle_csrf_error
+    app.register_error_handler(CSRFError, handle_csrf_error)
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(emails_bp)
