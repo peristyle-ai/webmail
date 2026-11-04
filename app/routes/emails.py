@@ -49,6 +49,60 @@ def _attachment_policy():
     }
 
 
+def handle_csrf_error(error):
+    """Recover from a CSRF rejection instead of returning a bare 400.
+
+    CSRFProtect runs as a before_request hook, so the route never runs and
+    Flask-WTF's default response is a bare "400 Bad Request -- The CSRF
+    tokens do not match." The user loses everything they had typed.
+
+    The usual cause is a session that changed under a page that was left
+    open: the session expired and was re-established, so the token
+    rendered into the form no longer matches the one in the session.
+    Re-render the compose form with the submitted content intact and a
+    fresh token, so the message survives and one more click sends it.
+    """
+    # Only the compose route gets the form back, and only for a signed-in
+    # user -- require_auth runs after CSRFProtect, so an anonymous POST
+    # must not be handed a compose page.
+    if (request.endpoint != 'emails.compose'
+            or request.method != 'POST'
+            or 'token' not in session):
+        return (
+            '<!doctype html><title>Session expired</title>'
+            '<h1>Session expired</h1>'
+            '<p>Your session expired before that could be submitted. '
+            'Nothing was sent. Please sign in again and try once more.</p>'
+            '<p><a href="/inbox">Back to the inbox</a></p>',
+            400,
+        )
+
+    form = request.form
+    had_files = bool(request.files)
+
+    flash(
+        'Your session expired while this message was open, so nothing was sent. '
+        'Your message has been put back below'
+        + (' -- please choose the attachments again.' if had_files else '.')
+        + ' Press Send again.',
+        'warning',
+    )
+
+    return render_template(
+        'compose.html',
+        **_attachment_policy(),
+        to=form.get('to', ''),
+        cc=form.get('cc', ''),
+        subject=form.get('subject', ''),
+        body=form.get('body', ''),
+        forward_email_id=form.get('forward_email_id', '').strip(),
+        forwarded_attachments=[],
+        in_reply_to=form.get('in_reply_to', '').strip() or None,
+        references=form.get('references', '').strip() or None,
+        body_is_html=form.get('body_is_html') == '1',
+    )
+
+
 def _upload_attachments(token, email_id, files):
     """Upload each attachment, collecting failures instead of hiding them.
 

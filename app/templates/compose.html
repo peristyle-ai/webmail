@@ -13,7 +13,7 @@
     </div>
 
     <!-- Compose Form -->
-    <form method="post" action="{{ url_for('emails.compose') }}" enctype="multipart/form-data" class="space-y-4">
+    <form id="composeForm" method="post" action="{{ url_for('emails.compose') }}" enctype="multipart/form-data" class="space-y-4">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         {% if forward_email_id %}
         <input type="hidden" name="forward_email_id" value="{{ forward_email_id }}">
@@ -104,7 +104,12 @@
 <script>
 // Fetch fresh CSRF token before form submission to avoid expiration
 (function() {
-    const form = document.querySelector('form');
+    // Bind to the compose form specifically. base.html renders a search
+    // form BEFORE the content block, so document.querySelector('form')
+    // used to return the search box -- the compose form then always
+    // submitted its render-time token and a stale session produced a
+    // bare 400 with the message lost.
+    const form = document.getElementById('composeForm');
     if (!form) return;
     
     form.addEventListener('submit', async function(e) {
